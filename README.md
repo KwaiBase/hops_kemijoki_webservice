@@ -8,7 +8,7 @@ Modernized mock implementation of the HOPS hydrological forecast visualization a
 - Leaflet dual-map main view with synchronized pan/zoom
 - Basin detail view with map, linked time controls, dual-variable plot, streamflow plot, and RMSE/NSE/KGE statistics
 - Config-driven variables, models, basins, logos, and CMS pages
-- File-based dummy data under `data/`
+- File-backed data API with operational CSV/PNG data supplied outside the repository
 - Markdown CMS pages under `content/pages/`
 - Admin/config page for editing guidance and live configuration inspection
 - Python server with FastAPI-compatible API shape and no mandatory third-party dependency
@@ -19,8 +19,10 @@ Modernized mock implementation of the HOPS hydrological forecast visualization a
 python .\server.py
 ```
 
-Set `HOPS_DATA_DIR` to a directory containing the operational basin, observation,
-PNG, and GeoJSON data before starting the service.
+Set `HOPS_DATA_DIR` to a data root containing the operational basin, observation,
+PNG, and GeoJSON data before starting the service. The repository does not store
+operational CSV or PNG files; use a small local fixture directory for development
+or the mounted data directory used by OpenShift.
 
 Open:
 
@@ -70,10 +72,10 @@ Run:
 podman run --rm -p 8000:8000 --env HOPS_HOST=0.0.0.0 hops-v2
 ```
 
-Run with mounted data:
+Run with externally supplied data:
 
 ```powershell
-podman run --rm -p 8000:8000 --env HOPS_HOST=0.0.0.0 --volume ${PWD}\data:/mnt/hops-data:Z --env HOPS_DATA_DIR=/mnt/hops-data hops-v2
+podman run --rm -p 8000:8000 --env HOPS_HOST=0.0.0.0 --volume C:\path\to\hops-data:/mnt/hops-data:ro --env HOPS_DATA_DIR=/mnt/hops-data hops-v2
 ```
 
 ## OpenShift notes
@@ -93,17 +95,17 @@ podman run --rm -p 8000:8000 --env HOPS_HOST=0.0.0.0 --volume ${PWD}\data:/mnt/h
 
 ```text
 data/
-  png/hops/{variable}/{date}.png
+  png/hops/{variable}/{date}.png       # supplied externally
   png/ecmwf/{variable}/{date}.png
   png/hsaf/{variable}/{date}.png
   png/clms/{variable}/{date}.png
-  basins/hops/{basin}.csv
+  basins/hops/{basin}.csv              # supplied externally
   basins/ecmwf/{basin}.csv
   basins/hsaf/{basin}.csv
   basins/clms/{basin}.csv
   basins/streamflow/{basin}_obs.csv
   basins/streamflow/{basin}_{model}.csv
-  metobs/fmi_tempc_{station_id}.csv
+  metobs/fmi_tempc_{station_id}.csv    # supplied externally
   metobs/fmi_precip_{station_id}.csv
   watersheds/{basin}.geojson
   geojson/rivers.geojson
@@ -112,6 +114,11 @@ config/
 content/
   pages/*.md
 ```
+
+The tracked `data/` directory contains only small geographic assets such as
+`geojson/` and `watersheds/`. Operational `basins/`, `metobs/`, and `png/`
+directories are ignored by Git and must be copied or mounted separately when
+running data-dependent views locally.
 
 ## Extending
 
