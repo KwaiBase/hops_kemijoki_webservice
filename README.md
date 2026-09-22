@@ -80,7 +80,7 @@ podman run --rm -p 8000:8000 --env HOPS_HOST=0.0.0.0 --volume C:\path\to\hops-da
 
 ## OpenShift notes
 
-- A starter manifest is available at `deploy/openshift.yaml`; replace `PROJECT` and image naming with your project namespace or registry path.
+- Environment-specific OpenShift manifests are kept locally and are not committed to this public repository. See `Deploy_on_OpenShift.md` for the deployment workflow.
 - Build from `Containerfile` using OpenShift Builds, Shipwright, Tekton, or an external registry.
 - Expose container port `8000`.
 - Configure readiness/liveness probes against `/health`.

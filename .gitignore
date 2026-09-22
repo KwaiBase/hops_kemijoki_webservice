@@ -13,3 +13,6 @@ env/
 data/basins/
 data/metobs/
 data/png/
+
+# Environment-specific OpenShift manifests remain local-only.
+deploy/*.local.yaml

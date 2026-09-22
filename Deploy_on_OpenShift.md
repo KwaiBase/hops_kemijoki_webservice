@@ -43,14 +43,14 @@ The project command must print `hops-webservice`.
 
 ## Versioned OpenShift Manifests
 
-- `deploy/buildconfig.yaml` defines the `hops-webservice` ImageStream and BuildConfig.
-- `deploy/openshift.yaml` defines the Deployment, Service, Route, and read-only NFS volume.
+- `deploy/buildconfig.local.yaml` defines the local-only `hops-webservice` ImageStream and BuildConfig.
+- `deploy/openshift.local.yaml` defines the local-only Deployment, Service, Route, and read-only NFS volume.
 
 Apply these when creating or intentionally reconciling OpenShift resources. They are not needed for every frontend release:
 
 ```powershell
-oc apply -f deploy/buildconfig.yaml
-oc apply -f deploy/openshift.yaml
+oc apply -f deploy/buildconfig.local.yaml
+oc apply -f deploy/openshift.local.yaml
 oc rollout status deployment/hops-webservice --timeout=180s
 ```
 
