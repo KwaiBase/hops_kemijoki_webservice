@@ -506,8 +506,12 @@
       const maskPath = showMask ? maskForVariable(overlayVar) : null;
       const pngSource = rasterSource(config, overlayVar);
       const png = `${dataUrl(`/png/${pngSource}/${overlayVar}/${date}.png`)}?v=${encodeURIComponent(config.rasterVersion || "1")}`;
-      const img = L.imageOverlay(png, config.overlayBounds, { opacity: mode === "obs" ? 0.45 : 0.58, crossOrigin: true }).addTo(map);
-      layersRef.current.push(img);
+      const imageLayer = L.imageOverlay(png, config.overlayBounds, { opacity: mode === "obs" ? 0.45 : 0.58, crossOrigin: true });
+      imageLayer.on("error", () => {
+        if (map.hasLayer(imageLayer)) map.removeLayer(imageLayer);
+      });
+      imageLayer.addTo(map);
+      layersRef.current.push(imageLayer);
       if (maskPath) {
         fetch(dataUrl(maskPath)).then(r => r.json()).then(g => {
           if (cancelled) return;
