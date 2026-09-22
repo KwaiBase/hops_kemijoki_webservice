@@ -526,7 +526,7 @@
       if (!basinId && config.projectArea?.source) {
         fetch(dataUrl(`/${config.projectArea.source}`)).then(r => r.json()).then(g => {
           if (cancelled) return;
-          const mask = L.polygon(outsideMaskRings(g, config.mainMapBounds || config.overlayBounds || config.maxBounds), {
+          const mask = L.polygon(outsideMaskRings(g, config.maxBounds || config.mainMapBounds || config.overlayBounds), {
             pane: "project-mask-pane",
             stroke: false,
             fillColor: "#000000",
