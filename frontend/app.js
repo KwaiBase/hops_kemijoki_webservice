@@ -403,6 +403,11 @@
         riverPane.style.zIndex = 455;
         riverPane.style.pointerEvents = "none";
       }
+      if (!map.getPane("project-mask-pane")) {
+        const projectMaskPane = map.createPane("project-mask-pane");
+        projectMaskPane.style.zIndex = 430;
+        projectMaskPane.style.pointerEvents = "none";
+      }
       if (basinId) {
         if (!map.getPane("basin-mask-pane")) {
           const maskPane = map.createPane("basin-mask-pane");
@@ -521,6 +526,14 @@
       if (!basinId && config.projectArea?.source) {
         fetch(dataUrl(`/${config.projectArea.source}`)).then(r => r.json()).then(g => {
           if (cancelled) return;
+          const mask = L.polygon(outsideMaskRings(g, config.mainMapBounds || config.overlayBounds || config.maxBounds), {
+            pane: "project-mask-pane",
+            stroke: false,
+            fillColor: "#000000",
+            fillOpacity: 0.48,
+            fillRule: "evenodd",
+            interactive: false
+          }).addTo(map);
           const l = L.geoJSON(g, {
             style: {
               color: "#f8d56b",
@@ -531,6 +544,7 @@
             }
           }).addTo(map);
           l.bindTooltip(config.projectArea.label || "Project area", { sticky: true });
+          layersRef.current.push(mask);
           layersRef.current.push(l);
         });
       }
