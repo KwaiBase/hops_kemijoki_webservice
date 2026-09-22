@@ -1,0 +1,28 @@
+apiVersion: image.openshift.io/v1
+kind: ImageStream
+metadata:
+  name: hops-webservice
+  labels:
+    app: hops-webservice
+---
+apiVersion: build.openshift.io/v1
+kind: BuildConfig
+metadata:
+  name: hops-webservice
+  labels:
+    app: hops-webservice
+spec:
+  runPolicy: SerialLatestOnly
+  source:
+    type: Git
+    git:
+      uri: https://github.com/ikonenjaakko-lab/hops_webservice.git
+      ref: master
+  strategy:
+    type: Docker
+    dockerStrategy:
+      dockerfilePath: Containerfile
+  output:
+    to:
+      kind: ImageStreamTag
+      name: hops-webservice:latest

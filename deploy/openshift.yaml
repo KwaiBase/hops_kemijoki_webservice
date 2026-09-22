@@ -1,25 +1,26 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: hops-v2
+  name: hops-webservice
   labels:
-    app: hops-v2
+    app: hops-webservice
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: hops-v2
+      app: hops-webservice
   template:
     metadata:
       labels:
-        app: hops-v2
+        app: hops-webservice
     spec:
       containers:
-        - name: hops-v2
-          image: image-registry.openshift-image-registry.svc:5000/PROJECT/hops-v2:latest
-          imagePullPolicy: IfNotPresent
+        - name: hops-webservice
+          image: image-registry.openshift-image-registry.svc:5000/hops-webservice/hops-webservice:latest
+          imagePullPolicy: Always
           ports:
-            - containerPort: 8000
+            - name: http
+              containerPort: 8000
           env:
             - name: HOPS_HOST
               value: "0.0.0.0"
@@ -28,54 +29,77 @@ spec:
             - name: HOPS_BASE_PATH
               value: ""
             - name: HOPS_DATA_DIR
-              value: "/opt/app-root/src/data"
+              value: "/mnt/hops/data"
             - name: HOPS_DATA_BASE_URL
               value: "/data"
+            - name: HOPS_TILE_URL
+              value: "https://tile.openstreetmap.org/{z}/{x}/{y}.png"
+            - name: HOPS_ENABLE_HILLSHADE
+              value: "false"
+          volumeMounts:
+            - name: hops-data
+              mountPath: /mnt/hops
+              readOnly: true
           readinessProbe:
             httpGet:
               path: /health
-              port: 8000
+              port: http
             initialDelaySeconds: 5
+            timeoutSeconds: 3
             periodSeconds: 10
+            failureThreshold: 6
           livenessProbe:
             httpGet:
               path: /health
-              port: 8000
+              port: http
             initialDelaySeconds: 20
+            timeoutSeconds: 3
             periodSeconds: 30
-          # For operational data, mount a PVC or object-storage sync target here:
-          # volumeMounts:
-          #   - name: hops-data
-          #     mountPath: /mnt/hops-data
-      # volumes:
-      #   - name: hops-data
-      #     persistentVolumeClaim:
-      #       claimName: hops-data
+            failureThreshold: 3
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: "1"
+              memory: 512Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            runAsNonRoot: true
+            capabilities:
+              drop:
+                - ALL
+      volumes:
+        - name: hops-data
+          nfs:
+            server: hydro.fmi.fi
+            path: /data/hops_webapps/kemijoki_v101
+            readOnly: true
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: hops-v2
+  name: hops-webservice
   labels:
-    app: hops-v2
+    app: hops-webservice
 spec:
   selector:
-    app: hops-v2
+    app: hops-webservice
   ports:
     - name: http
       port: 8000
-      targetPort: 8000
+      targetPort: http
 ---
 apiVersion: route.openshift.io/v1
 kind: Route
 metadata:
-  name: hops-v2
+  name: hops-webservice
   labels:
-    app: hops-v2
+    app: hops-webservice
 spec:
   to:
     kind: Service
-    name: hops-v2
+    name: hops-webservice
   port:
     targetPort: http
   tls:
