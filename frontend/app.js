@@ -64,6 +64,18 @@
   );
   const apiUrl = (path) => `${basePath}${path}`;
   const dataUrl = (path) => `${dataBaseUrl}${path}`;
+  const rasterImageCache = new Map();
+  const loadRasterImage = url => {
+    if (rasterImageCache.has(url)) return rasterImageCache.get(url);
+    const promise = new Promise(resolve => {
+      const image = new Image();
+      image.onload = () => resolve(true);
+      image.onerror = () => resolve(false);
+      image.src = url;
+    });
+    rasterImageCache.set(url, promise);
+    return promise;
+  };
 
   // Leaflet masks use latitude/longitude rings, while GeoJSON stores longitude/latitude coordinates.
   const geoJsonOuterRings = (geojson) => {
@@ -349,7 +361,7 @@
   }
 
   // Shared Leaflet map component for the two main maps and the basin detail map.
-  function HopsMap({ id, config, date, variable, mode, showRivers, showPoints, showObs, showMask = true, obsType, basins, obsStations, onBasin, masterRef, slaveRef, basinId, passive }) {
+  function HopsMap({ id, config, date, variable, mode, showRivers, showPoints, showObs, showMask = true, obsType, basins, obsStations, onBasin, masterRef, slaveRef, basinId, passive, preloadDates = [] }) {
     const divRef = useRef(null);
     const mapRef = useRef(null);
     const layersRef = useRef([]);
@@ -357,6 +369,7 @@
     const syncing = useRef(false);
     const basinFitPadding = [18, 18];
     const [metRowsByStation, setMetRowsByStation] = useState({});
+    const [rasterLoading, setRasterLoading] = useState({ active: false, loaded: 0, total: 0 });
 
     useEffect(() => {
       const mapBounds = !basinId && config.mainMapBounds ? config.mainMapBounds : config.maxBounds;
@@ -505,13 +518,24 @@
       const overlayVar = mode === "obs" ? (variable || "temperature") : variable;
       const maskPath = showMask ? maskForVariable(overlayVar) : null;
       const pngSource = rasterSource(config, overlayVar);
-      const png = `${dataUrl(`/png/${pngSource}/${overlayVar}/${date}.png`)}?v=${encodeURIComponent(config.rasterVersion || "1")}`;
-      const imageLayer = L.imageOverlay(png, config.overlayBounds, { opacity: mode === "obs" ? 0.45 : 0.58, crossOrigin: true });
-      imageLayer.on("error", () => {
-        if (map.hasLayer(imageLayer)) map.removeLayer(imageLayer);
+      const rasterUrl = rasterDate => `${dataUrl(`/png/${pngSource}/${overlayVar}/${rasterDate}.png`)}?v=${encodeURIComponent(config.rasterVersion || "1")}`;
+      const currentPng = rasterUrl(date);
+      const timelineIndex = preloadDates.indexOf(date);
+      const upcomingDates = (timelineIndex >= 0 ? preloadDates.slice(timelineIndex + 1) : preloadDates)
+        .filter((candidate, index, values) => candidate !== date && values.indexOf(candidate) === index)
+        .slice(0, 3);
+      const preloadUrls = [currentPng, ...upcomingDates.map(rasterUrl)];
+      setRasterLoading({ active: true, loaded: 0, total: preloadUrls.length });
+      preloadUrls.forEach((url, index) => {
+        loadRasterImage(url).then(available => {
+          if (cancelled) return;
+          setRasterLoading(prev => ({ ...prev, loaded: prev.loaded + 1, active: prev.loaded + 1 < prev.total }));
+          if (index === 0 && available) {
+            const imageLayer = L.imageOverlay(url, config.overlayBounds, { opacity: mode === "obs" ? 0.45 : 0.58, crossOrigin: true }).addTo(map);
+            layersRef.current.push(imageLayer);
+          }
+        });
       });
-      imageLayer.addTo(map);
-      layersRef.current.push(imageLayer);
       if (maskPath) {
         fetch(dataUrl(maskPath)).then(r => r.json()).then(g => {
           if (cancelled) return;
@@ -654,9 +678,15 @@
         });
       }
       return () => { cancelled = true; };
-    }, [date, variable, mode, showRivers, showPoints, showObs, showMask, obsType, basinId, obsStations, metRowsByStation]);
+    }, [date, variable, mode, showRivers, showPoints, showObs, showMask, obsType, basinId, obsStations, metRowsByStation, preloadDates]);
 
-    return e("div", { id, ref: divRef, className: "map" + (basinId ? " basin-map" : "") });
+    const loadingPercent = rasterLoading.total ? Math.round((rasterLoading.loaded / rasterLoading.total) * 100) : 0;
+    return e("div", { id, ref: divRef, className: "map" + (basinId ? " basin-map" : "") },
+      rasterLoading.active && e("div", { className: "raster-loading", role: "status", "aria-live": "polite" },
+        e("span", { className: "raster-spinner", "aria-hidden": "true" }),
+        e("span", null, `Loading map data... ${loadingPercent}%`)
+      )
+    );
   }
 
   // Main comparison view with synchronized HOPS maps and the shared date rail.
@@ -709,7 +739,7 @@
             e("label", null, e("input", { type: "checkbox", checked: showRivers, onChange: ev => setShowRivers(ev.target.checked) }), "River network")
           )
         ),
-        e(HopsMap, { id: "map-a", config, date, variable: varA, showRivers, showPoints: showRivers, showObs: false, showMask: !hasVariableMask(varA) || maskA, basins: config.basins, onBasin: openBasin, masterRef: mapA, slaveRef: mapB })
+        e(HopsMap, { id: "map-a", config, date, variable: varA, showRivers, showPoints: showRivers, showObs: false, showMask: !hasVariableMask(varA) || maskA, basins: config.basins, onBasin: openBasin, masterRef: mapA, slaveRef: mapB, preloadDates: dates })
       ),
       e("aside", { className: "panel date-column" },
         e("div", { className: "date-control-row" },
@@ -740,7 +770,7 @@
             hasVariableMask(varB) && e("label", { className: "mask-toggle" }, e("input", { type: "checkbox", checked: maskB, onChange: ev => setMaskB(ev.target.checked) }), "Mask")
           )
         ),
-        e(HopsMap, { id: "map-b", config, date, variable: varB, showRivers: false, showPoints: false, showObs, showMask: !hasVariableMask(varB) || maskB, obsType, basins: config.basins, obsStations: config.observationStations, masterRef: mapA, slaveRef: mapB, passive: true })
+        e(HopsMap, { id: "map-b", config, date, variable: varB, showRivers: false, showPoints: false, showObs, showMask: !hasVariableMask(varB) || maskB, obsType, basins: config.basins, obsStations: config.observationStations, masterRef: mapA, slaveRef: mapB, passive: true, preloadDates: dates })
       )
     );
   }
@@ -950,6 +980,7 @@
       if (!zoomRange) return baseVisible;
       return baseVisible.filter(r => r.date >= zoomRange.start && r.date <= zoomRange.end);
     }, [baseVisible, zoomRange]);
+    const visibleDates = useMemo(() => visible.map(row => row.date), [visible]);
     useEffect(() => {
       if (!visible.length) return;
       if (!visible.some(r => r.date === date)) setDate(visible[visible.length - 1].date);
@@ -1199,7 +1230,7 @@
               hasVariableMask(mapVar) && e("label", { className: "mask-toggle" }, e("input", { type: "checkbox", checked: mapMask, onChange: ev => setMapMask(ev.target.checked) }), "Mask")
             )
           ),
-          e(HopsMap, { id: "basin-map", config, date, variable: mapVar, showRivers: true, showPoints: true, showObs: true, showMask: !hasVariableMask(mapVar) || mapMask, basins: [basin], basinId: basin.id })
+          e(HopsMap, { id: "basin-map", config, date, variable: mapVar, showRivers: true, showPoints: true, showObs: true, showMask: !hasVariableMask(mapVar) || mapMask, basins: [basin], basinId: basin.id, preloadDates: visibleDates })
         )
       )
     );

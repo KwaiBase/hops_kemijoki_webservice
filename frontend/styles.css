@@ -52,6 +52,35 @@ label {
   flex-direction: column;
   overflow: hidden;
 }
+.raster-loading {
+  position: absolute;
+  z-index: 1000;
+  top: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 10px;
+  border: 1px solid rgba(111, 211, 239, 0.7);
+  border-radius: 5px;
+  background: rgba(7, 16, 21, 0.9);
+  color: #edf7fb;
+  font-size: 12px;
+  pointer-events: none;
+  white-space: nowrap;
+}
+.raster-spinner {
+  width: 13px;
+  height: 13px;
+  border: 2px solid rgba(237, 247, 251, 0.35);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: raster-spin 0.8s linear infinite;
+}
+@keyframes raster-spin {
+  to { transform: rotate(360deg); }
+}
 .topbar {
   min-height: 74px;
   display: grid;
