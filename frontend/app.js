@@ -898,7 +898,12 @@
     const [zoomRange, setZoomRange] = useState(null);
     const plotsRef = useRef(null);
     const scrubberDragRef = useRef(false);
-    useEffect(() => { fetch(apiUrl(`/api/timeseries/${basin.id}`)).then(r => r.json()).then(d => setRows(d.rows)); }, [basin.id]);
+    useEffect(() => {
+      fetch(apiUrl(`/api/timeseries/${basin.id}`))
+        .then(r => r.json())
+        .then(d => setRows(Array.isArray(d.rows) ? d.rows : []))
+        .catch(() => setRows([]));
+    }, [basin.id]);
     const availableYears = useMemo(() => {
       const years = Array.from(new Set(rows.map(r => Number(r.date.slice(0, 4))))).filter(Number.isFinite).sort((a, b) => a - b);
       return years.length ? years : [selectedYear];
