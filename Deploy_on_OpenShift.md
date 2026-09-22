@@ -6,7 +6,7 @@ Working runbook for publishing this repository to the live HOPS OpenShift deploy
 
 | Item | Value |
 | --- | --- |
-| OpenShift API | `https://api.ock.fmi.fi:6443` |
+| OpenShift API | Obtain from the FMI OpenShift console |
 | Project | `hops-webservice` |
 | Public route | `https://hops-webservice-hops-webservice.apps.ock.fmi.fi` |
 | Git repository | `https://github.com/ikonenjaakko-lab/hops_webservice.git` |
@@ -15,7 +15,7 @@ Working runbook for publishing this repository to the live HOPS OpenShift deploy
 | Deployment/Service/Route | `hops-webservice` |
 | Container port | `8000` |
 | Health endpoint | `/health` |
-| NFS mount | `hydro.fmi.fi:/data/hops_webapps/kemijoki_v101` -> `/mnt/hops` |
+| NFS mount | FMI-managed read-only mount -> `/mnt/hops` |
 | Application data | `/mnt/hops/data` |
 
 The active OpenShift resource name is `hops-webservice`. The former `hops-v2` name is obsolete.
@@ -30,7 +30,8 @@ The active OpenShift resource name is `hops-webservice`. The former `hops-v2` na
 - Use an immutable image reference for a release when possible; `latest` is not a release identifier.
 
 ```powershell
-oc login https://api.ock.fmi.fi:6443
+# Use the login command provided by the FMI OpenShift web console.
+oc login <fmi-openshift-api>
 oc whoami
 oc project hops-webservice
 oc project -q
