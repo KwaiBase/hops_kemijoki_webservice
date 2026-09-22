@@ -191,7 +191,7 @@ def main():
     host = os.getenv("HOPS_HOST", "127.0.0.1")
     port = int(os.getenv("HOPS_PORT", "8000"))
     route = BASE_PREFIX or "/"
-    print(f"HOPS v2.0 running at http://{host}:{port}{route}")
+    print(f"HOPS running at http://{host}:{port}{route}")
     ThreadingHTTPServer((host, port), HopsHandler).serve_forever()
 
 

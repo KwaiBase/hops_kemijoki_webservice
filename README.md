@@ -1,4 +1,4 @@
-# HOPS Hydrological Prediction, Comparison & Visualisation System (v2.0)
+# HOPS Hydrological Prediction, Comparison & Visualisation System
 
 Modernized mock implementation of the HOPS hydrological forecast visualization and comparison service.
 

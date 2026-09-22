@@ -1261,7 +1261,7 @@
     const config = useConfig();
     const [view, setView] = useState("main");
     const [basin, setBasin] = useState(null);
-    if (!config) return e("div", { className: "page" }, "Loading HOPS v2.0...");
+    if (!config) return e("div", { className: "page" }, "Loading HOPS...");
     return e("div", { className: "app" },
       e(Header, { config, view: basin ? "basin" : view, setView: v => { setBasin(null); setView(v); } }),
       basin ? e(BasinView, { config, basinId: basin, close: () => setBasin(null) }) :
