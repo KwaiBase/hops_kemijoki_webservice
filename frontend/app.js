@@ -387,6 +387,7 @@
     const divRef = useRef(null);
     const mapRef = useRef(null);
     const layersRef = useRef([]);
+    const staticLayersRef = useRef([]);
     const rasterLayerRef = useRef(null);
     const basinViewRef = useRef(null);
     const syncing = useRef(false);
@@ -531,6 +532,83 @@
       };
     }, [basinId]);
 
+    // Boundary/context layers (project area shading, basin outline shading, rivers) don't depend
+    // on the selected date or variable, so they load once per basin/toggle instead of refetching
+    // and flickering on every date or variable change.
+    useEffect(() => {
+      const map = mapRef.current;
+      if (!map) return;
+      let cancelled = false;
+      staticLayersRef.current.forEach(l => map.removeLayer(l));
+      staticLayersRef.current = [];
+      const selectedBasin = basins.find(b => b.id === basinId);
+      if (!basinId && config.projectArea?.source) {
+        fetch(dataUrl(`/${config.projectArea.source}`)).then(r => r.json()).then(g => {
+          if (cancelled) return;
+          const mask = L.polygon(outsideMaskRings(g, config.maxBounds || config.mainMapBounds || config.overlayBounds), {
+            pane: "project-mask-pane",
+            stroke: false,
+            fillColor: "#000000",
+            fillOpacity: mapOptions.projectMaskOpacity ?? 0.48,
+            fillRule: "evenodd",
+            interactive: false
+          }).addTo(map);
+          const l = L.geoJSON(g, {
+            style: {
+              color: "#f8d56b",
+              weight: 2,
+              opacity: 0.95,
+              fillColor: "#f8d56b",
+              fillOpacity: 0.04
+            }
+          }).addTo(map);
+          l.bindTooltip(config.projectArea.label || "Project area", { sticky: true });
+          staticLayersRef.current.push(mask);
+          staticLayersRef.current.push(l);
+        });
+      }
+      if (showRivers) {
+        fetch(dataUrl("/geojson/rivers.geojson")).then(r => r.json()).then(g => {
+          if (cancelled) return;
+          const l = L.geoJSON(g, { pane: "river-pane", style: { color: "#5fd1ff", weight: 2, opacity: 0.9 } }).addTo(map);
+          staticLayersRef.current.push(l);
+        });
+      }
+      if (basinId && selectedBasin) {
+        fetch(dataUrl(`/watersheds/${basinId}.geojson`)).then(r => r.json()).then(g => {
+          if (cancelled) return;
+          const mask = L.polygon(outsideMaskRings(g, config.maxBounds), {
+            pane: "basin-mask-pane",
+            stroke: false,
+            fillColor: "#000000",
+            fillOpacity: mapOptions.basinMaskOpacity ?? 0.5,
+            fillRule: "evenodd",
+            interactive: false
+          }).addTo(map);
+          const l = L.geoJSON(g, {
+            pane: "basin-outline-pane",
+            style: {
+              color: "#f8d56b",
+              weight: 2,
+              opacity: 0.95,
+              fillOpacity: 0
+            }
+          }).addTo(map);
+          staticLayersRef.current.push(mask);
+          staticLayersRef.current.push(l);
+          const bounds = l.getBounds();
+          map.invalidateSize();
+          map.fitBounds(bounds, { animate: false, padding: basinFitPadding });
+          basinViewRef.current = { bounds, zoom: map.getZoom() };
+          map.setMinZoom(basinViewRef.current.zoom);
+          map.setMaxBounds(basinViewRef.current.bounds.pad(0.02));
+          map.dragging.disable();
+          map.scrollWheelZoom.disable();
+        });
+      }
+      return () => { cancelled = true; };
+    }, [basinId, showRivers]);
+
     // Rebuild overlay layers whenever the selected date, raster, masks, or map decorations change.
     useEffect(() => {
       const map = mapRef.current;
@@ -538,7 +616,6 @@
       let cancelled = false;
       layersRef.current.forEach(l => map.removeLayer(l));
       layersRef.current = [];
-      const selectedBasin = basins.find(b => b.id === basinId);
       const overlayVar = mode === "obs" ? (variable || "temperature") : variable;
       const maskPath = showMask ? maskForVariable(overlayVar) : null;
       const pngSource = rasterSource(config, overlayVar);
@@ -594,70 +671,6 @@
             }
           }).addTo(map);
           layersRef.current.push(l);
-        });
-      }
-      if (!basinId && config.projectArea?.source) {
-        fetch(dataUrl(`/${config.projectArea.source}`)).then(r => r.json()).then(g => {
-          if (cancelled) return;
-          const mask = L.polygon(outsideMaskRings(g, config.maxBounds || config.mainMapBounds || config.overlayBounds), {
-            pane: "project-mask-pane",
-            stroke: false,
-            fillColor: "#000000",
-            fillOpacity: mapOptions.projectMaskOpacity ?? 0.48,
-            fillRule: "evenodd",
-            interactive: false
-          }).addTo(map);
-          const l = L.geoJSON(g, {
-            style: {
-              color: "#f8d56b",
-              weight: 2,
-              opacity: 0.95,
-              fillColor: "#f8d56b",
-              fillOpacity: 0.04
-            }
-          }).addTo(map);
-          l.bindTooltip(config.projectArea.label || "Project area", { sticky: true });
-          layersRef.current.push(mask);
-          layersRef.current.push(l);
-        });
-      }
-      if (showRivers) {
-        fetch(dataUrl("/geojson/rivers.geojson")).then(r => r.json()).then(g => {
-          if (cancelled) return;
-          const l = L.geoJSON(g, { pane: "river-pane", style: { color: "#5fd1ff", weight: 2, opacity: 0.9 } }).addTo(map);
-          layersRef.current.push(l);
-        });
-      }
-      if (basinId && selectedBasin) {
-        fetch(dataUrl(`/watersheds/${basinId}.geojson`)).then(r => r.json()).then(g => {
-          if (cancelled) return;
-          const mask = L.polygon(outsideMaskRings(g, config.maxBounds), {
-            pane: "basin-mask-pane",
-            stroke: false,
-            fillColor: "#000000",
-            fillOpacity: mapOptions.basinMaskOpacity ?? 0.5,
-            fillRule: "evenodd",
-            interactive: false
-          }).addTo(map);
-          const l = L.geoJSON(g, {
-            pane: "basin-outline-pane",
-            style: {
-              color: "#f8d56b",
-              weight: 2,
-              opacity: 0.95,
-              fillOpacity: 0
-            }
-          }).addTo(map);
-          layersRef.current.push(mask);
-          layersRef.current.push(l);
-          const bounds = l.getBounds();
-          map.invalidateSize();
-          map.fitBounds(bounds, { animate: false, padding: basinFitPadding });
-          basinViewRef.current = { bounds, zoom: map.getZoom() };
-          map.setMinZoom(basinViewRef.current.zoom);
-          map.setMaxBounds(basinViewRef.current.bounds.pad(0.02));
-          map.dragging.disable();
-          map.scrollWheelZoom.disable();
         });
       }
       if (showPoints) {
