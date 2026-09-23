@@ -187,6 +187,8 @@ For basin variables, a CSV column is considered usable when at least one value i
 
 The external `/mnt/hops/config/display-options.json` file can also control model labels/colors/default selections, the basin list and outlet coordinates, map default variables and mask opacity, observation defaults, history/forecast lengths, animation speed, graph ranges, plot defaults, and the no-data threshold. Edit the mounted file and refresh the application; no image rebuild or rollout is required.
 
+It also controls map legends through the `legends` object, keyed by variable ID. Each legend can define `title`, `unit`, optional `min`/`max`, and ordered color `stops` with `label` and `color`. Each map has its own `Legend` checkbox so users can hide the legend when map space is limited.
+
 ## Basemap
 
 The current watermark-free settings are:

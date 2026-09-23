@@ -25,6 +25,37 @@
     "basinMaskOpacity": 0.5,
     "variableMaskOpacity": 0.85
   },
+  "legends": {
+    "soil_state": {
+      "title": "Soil State",
+      "unit": "index",
+      "min": 0,
+      "max": 1,
+      "stops": [
+        {"label": "Low", "color": "#193d35"},
+        {"label": "Medium", "color": "#4f9f75"},
+        {"label": "High", "color": "#b8e6b0"}
+      ]
+    },
+    "mean_runoff": {
+      "title": "Mean Runoff",
+      "unit": "mm/day",
+      "stops": [
+        {"label": "Low", "color": "#173f5f"},
+        {"label": "Medium", "color": "#55c7e8"},
+        {"label": "High", "color": "#f4fbff"}
+      ]
+    },
+    "mean_swe": {
+      "title": "Mean Snow (SWE)",
+      "unit": "mm",
+      "stops": [
+        {"label": "Low", "color": "#315b72"},
+        {"label": "Medium", "color": "#6dd6ff"},
+        {"label": "High", "color": "#f4fbff"}
+      ]
+    }
+  },
   "observations": {
     "enabledByDefault": true,
     "defaultType": "temperature"

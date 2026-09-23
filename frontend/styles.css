@@ -51,6 +51,52 @@ label {
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  position: relative;
+}
+.map-legend {
+  position: absolute;
+  z-index: 900;
+  right: 10px;
+  bottom: 28px;
+  width: min(150px, calc(100% - 20px));
+  padding: 8px 9px;
+  border: 1px solid rgba(237, 247, 251, 0.45);
+  border-radius: 5px;
+  background: rgba(7, 16, 21, 0.84);
+  color: var(--text);
+  font-size: 11px;
+  line-height: 1.2;
+  pointer-events: none;
+}
+.map-legend-title {
+  font-weight: 700;
+  margin-bottom: 2px;
+}
+.map-legend-unit {
+  color: var(--muted);
+  margin-bottom: 6px;
+}
+.map-legend-scale {
+  display: grid;
+  gap: 4px;
+}
+.map-legend-stop {
+  display: grid;
+  grid-template-columns: 16px minmax(0, 1fr);
+  gap: 6px;
+  align-items: center;
+}
+.map-legend-swatch {
+  width: 16px;
+  height: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.45);
+}
+.map-legend-range {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 6px;
+  color: var(--muted);
 }
 .raster-loading {
   position: absolute;

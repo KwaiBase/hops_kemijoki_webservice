@@ -36,6 +36,20 @@
     const vars = sourceVariables(config, source, options);
     return vars.some(v => v.id === fallbackId) ? fallbackId : (vars[0]?.id || config.variables[0]?.id);
   };
+  const legendFor = (config, variable) => {
+    const definition = config.variables.find(v => v.id === variable) || {};
+    const custom = config.displayOptions?.legends?.[variable] || {};
+    return {
+      title: custom.title || definition.label || variable,
+      unit: custom.unit || definition.unit || "",
+      min: custom.min,
+      max: custom.max,
+      stops: custom.stops?.length ? custom.stops : [
+        { label: "Low", color: definition.palette || "#4f9f75" },
+        { label: "High", color: "#f4fbff" }
+      ]
+    };
+  };
   const VariableSelect = ({ config, source, value, onChange, includeNone = false, noneLabel = "NONE", basinTimeseries = false, disabledValues = new Set() }) => {
     const vars = sourceVariables(config, source, { basinTimeseries });
     const grouped = vars.reduce((acc, variable) => {
@@ -366,7 +380,7 @@
   }
 
   // Shared Leaflet map component for the two main maps and the basin detail map.
-  function HopsMap({ id, config, date, variable, mode, showRivers, showPoints, showObs, showMask = true, obsType, basins, obsStations, onBasin, masterRef, slaveRef, basinId, passive, preloadDates = [] }) {
+  function HopsMap({ id, config, date, variable, mode, showRivers, showPoints, showObs, showMask = true, showLegend = true, obsType, basins, obsStations, onBasin, masterRef, slaveRef, basinId, passive, preloadDates = [] }) {
     const divRef = useRef(null);
     const mapRef = useRef(null);
     const layersRef = useRef([]);
@@ -687,7 +701,21 @@
     }, [date, variable, mode, showRivers, showPoints, showObs, showMask, obsType, basinId, obsStations, metRowsByStation, preloadDates]);
 
     const loadingPercent = rasterLoading.total ? Math.round((rasterLoading.loaded / rasterLoading.total) * 100) : 0;
+    const legend = legendFor(config, variable);
     return e("div", { id, ref: divRef, className: "map" + (basinId ? " basin-map" : "") },
+      showLegend && e("div", { className: "map-legend", role: "group", "aria-label": `${legend.title} legend` },
+        e("div", { className: "map-legend-title" }, legend.title),
+        legend.unit && e("div", { className: "map-legend-unit" }, legend.unit),
+        e("div", { className: "map-legend-scale" }, legend.stops.map((stop, index) =>
+          e("div", { className: "map-legend-stop", key: `${stop.label}-${index}` },
+            e("span", { className: "map-legend-swatch", style: { background: stop.color } }),
+            e("span", null, stop.label)
+          )
+        )),
+        (legend.min !== undefined || legend.max !== undefined) && e("div", { className: "map-legend-range" },
+          e("span", null, legend.min ?? ""), e("span", null, legend.max ?? "")
+        )
+      ),
       rasterLoading.active && e("div", { className: "raster-loading", role: "status", "aria-live": "polite" },
         e("span", { className: "raster-spinner", "aria-hidden": "true" }),
         e("span", null, `Loading map data... ${loadingPercent}%`)
@@ -711,6 +739,8 @@
     const [animate, setAnimate] = useState(false);
     const [showRivers, setShowRivers] = useState(true);
     const [showObs, setShowObs] = useState(observationOptions.enabledByDefault !== false);
+    const [showLegendA, setShowLegendA] = useState(true);
+    const [showLegendB, setShowLegendB] = useState(true);
     const [maskA, setMaskA] = useState(true);
     const [maskB, setMaskB] = useState(true);
     const [obsType, setObsType] = useState(observationOptions.defaultType || "temperature");
@@ -746,10 +776,11 @@
             hasVariableMask(varA) && e("label", { className: "mask-toggle" }, e("input", { type: "checkbox", checked: maskA, onChange: ev => setMaskA(ev.target.checked) }), "Mask")
           ),
           e("div", { className: "control-row map-a-layer-toggle" },
-            e("label", null, e("input", { type: "checkbox", checked: showRivers, onChange: ev => setShowRivers(ev.target.checked) }), "River network")
+            e("label", null, e("input", { type: "checkbox", checked: showRivers, onChange: ev => setShowRivers(ev.target.checked) }), "River network"),
+            e("label", null, e("input", { type: "checkbox", checked: showLegendA, onChange: ev => setShowLegendA(ev.target.checked) }), "Legend")
           )
         ),
-        e(HopsMap, { id: "map-a", config, date, variable: varA, showRivers, showPoints: showRivers, showObs: false, showMask: !hasVariableMask(varA) || maskA, basins: config.basins, onBasin: openBasin, masterRef: mapA, slaveRef: mapB, preloadDates: dates })
+        e(HopsMap, { id: "map-a", config, date, variable: varA, showRivers, showPoints: showRivers, showObs: false, showMask: !hasVariableMask(varA) || maskA, showLegend: showLegendA, basins: config.basins, onBasin: openBasin, masterRef: mapA, slaveRef: mapB, preloadDates: dates })
       ),
       e("aside", { className: "panel date-column" },
         e("div", { className: "date-control-row" },
@@ -777,10 +808,11 @@
           e("div", { className: "control-row" },
             e(SourceSelect, { value: sourceB, onChange: setMapSourceB, ariaLabel: "Map B data source" }),
             e(VariableSelect, { config, source: sourceB, value: varB, onChange: setVarB }),
-            hasVariableMask(varB) && e("label", { className: "mask-toggle" }, e("input", { type: "checkbox", checked: maskB, onChange: ev => setMaskB(ev.target.checked) }), "Mask")
+            hasVariableMask(varB) && e("label", { className: "mask-toggle" }, e("input", { type: "checkbox", checked: maskB, onChange: ev => setMaskB(ev.target.checked) }), "Mask"),
+            e("label", null, e("input", { type: "checkbox", checked: showLegendB, onChange: ev => setShowLegendB(ev.target.checked) }), "Legend")
           )
         ),
-        e(HopsMap, { id: "map-b", config, date, variable: varB, showRivers: false, showPoints: false, showObs, showMask: !hasVariableMask(varB) || maskB, obsType, basins: config.basins, obsStations: config.observationStations, masterRef: mapA, slaveRef: mapB, passive: true, preloadDates: dates })
+        e(HopsMap, { id: "map-b", config, date, variable: varB, showRivers: false, showPoints: false, showObs, showMask: !hasVariableMask(varB) || maskB, showLegend: showLegendB, obsType, basins: config.basins, obsStations: config.observationStations, masterRef: mapA, slaveRef: mapB, passive: true, preloadDates: dates })
       )
     );
   }
@@ -935,6 +967,7 @@
     const [mapSource, setMapSource] = useState("hops");
     const [mapVar, setMapVar] = useState(defaultVariable(config, mapOptions.defaultSource || "hops", mapOptions.basinDefaultVariable || "soil_state"));
     const [mapMask, setMapMask] = useState(true);
+    const [showLegend, setShowLegend] = useState(true);
     const [varASource, setVarASource] = useState("hops");
     const [varBSource, setVarBSource] = useState("hops");
     const [varA, setVarA] = useState(defaultVariable(config, "hops", "mean_runoff", { basinTimeseries: true }));
@@ -1265,10 +1298,11 @@
             e("div", { className: "control-row" },
               e(SourceSelect, { value: mapSource, onChange: setBasinMapSource, ariaLabel: "Basin map data source" }),
               e(VariableSelect, { config, source: mapSource, value: mapVar, onChange: setMapVar }),
-              hasVariableMask(mapVar) && e("label", { className: "mask-toggle" }, e("input", { type: "checkbox", checked: mapMask, onChange: ev => setMapMask(ev.target.checked) }), "Mask")
+              hasVariableMask(mapVar) && e("label", { className: "mask-toggle" }, e("input", { type: "checkbox", checked: mapMask, onChange: ev => setMapMask(ev.target.checked) }), "Mask"),
+              e("label", null, e("input", { type: "checkbox", checked: showLegend, onChange: ev => setShowLegend(ev.target.checked) }), "Legend")
             )
           ),
-          e(HopsMap, { id: "basin-map", config, date, variable: mapVar, showRivers: true, showPoints: true, showObs: true, showMask: !hasVariableMask(mapVar) || mapMask, basins: [basin], basinId: basin.id, preloadDates: visibleDates })
+          e(HopsMap, { id: "basin-map", config, date, variable: mapVar, showRivers: true, showPoints: true, showObs: true, showMask: !hasVariableMask(mapVar) || mapMask, showLegend, basins: [basin], basinId: basin.id, preloadDates: visibleDates })
         )
       )
     );
