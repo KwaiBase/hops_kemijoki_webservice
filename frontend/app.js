@@ -26,15 +26,17 @@
   const maskForVariable = variable => VARIABLE_MASKS[String(variable || "").split("_")[0]] || null;
   const hasVariableMask = variable => Boolean(maskForVariable(variable));
 
-  // Map selectors show every raster variable; basin plot selectors can exclude thematic-only layers.
+  // External option lists control which variables are offered in map and basin selectors.
   const sourceVariables = (config, source, options = {}) => config.variables.filter(v =>
-    (v.source || "hops") === source && (!options.basinTimeseries || v.basinTimeseries !== false)
+    (v.source || "hops") === source &&
+    (!options.basinTimeseries || v.basinTimeseries !== false) &&
+    (!options.basinTimeseries ? (!config.mapVariables || config.mapVariables.includes(v.id)) : (!config.basinVariables || config.basinVariables.includes(v.id)))
   );
   const defaultVariable = (config, source, fallbackId, options = {}) => {
     const vars = sourceVariables(config, source, options);
     return vars.some(v => v.id === fallbackId) ? fallbackId : (vars[0]?.id || config.variables[0]?.id);
   };
-  const VariableSelect = ({ config, source, value, onChange, includeNone = false, noneLabel = "NONE", basinTimeseries = false }) => {
+  const VariableSelect = ({ config, source, value, onChange, includeNone = false, noneLabel = "NONE", basinTimeseries = false, disabledValues = new Set() }) => {
     const vars = sourceVariables(config, source, { basinTimeseries });
     const grouped = vars.reduce((acc, variable) => {
       const group = variable.group || sourceLabel(source);
@@ -46,7 +48,7 @@
       includeNone && e("option", { value: "none" }, noneLabel),
       ...Object.entries(grouped).map(([group, groupVars]) =>
         e("optgroup", { key: group, label: group },
-          groupVars.map(v => e("option", { key: v.id, value: v.id }, v.label))
+          groupVars.map(v => e("option", { key: v.id, value: v.id, disabled: disabledValues.has(v.id) }, disabledValues.has(v.id) ? `${v.label} (no data)` : v.label))
         )
       )
     );
@@ -930,8 +932,8 @@
     const [bottomPlotMode, setBottomPlotMode] = useState("streamflow");
     const [bottomVarASource, setBottomVarASource] = useState("hops");
     const [bottomVarBSource, setBottomVarBSource] = useState("hops");
-    const [bottomVarA, setBottomVarA] = useState(defaultVariable(config, "hops", "mean_swe"));
-    const [bottomVarB, setBottomVarB] = useState(defaultVariable(config, "hops", "mean_runoff"));
+    const [bottomVarA, setBottomVarA] = useState(defaultVariable(config, "hops", "mean_swe", { basinTimeseries: true }));
+    const [bottomVarB, setBottomVarB] = useState(defaultVariable(config, "hops", "mean_runoff", { basinTimeseries: true }));
     const [bottomVarAKind, setBottomVarAKind] = useState("line");
     const [bottomVarBKind, setBottomVarBKind] = useState("line");
     const [days, setDays] = useState(30);
@@ -981,10 +983,23 @@
       return baseVisible.filter(r => r.date >= zoomRange.start && r.date <= zoomRange.end);
     }, [baseVisible, zoomRange]);
     const visibleDates = useMemo(() => visible.map(row => row.date), [visible]);
+    const availableBasinVariables = useMemo(() => new Set(
+      sourceVariables(config, "hops", { basinTimeseries: true })
+        .concat(SOURCE_OPTIONS.slice(1).flatMap(source => sourceVariables(config, source.id, { basinTimeseries: true })))
+        .filter(variable => rows.some(row => Number(row[variable.id]) > -99998))
+        .map(variable => variable.id)
+    ), [config, rows]);
     useEffect(() => {
       if (!visible.length) return;
       if (!visible.some(r => r.date === date)) setDate(visible[visible.length - 1].date);
     }, [visible, date]);
+    useEffect(() => {
+      const firstAvailable = availableBasinVariables.values().next().value || "none";
+      if (varA !== "none" && !availableBasinVariables.has(varA)) setVarA(firstAvailable);
+      if (varB !== "none" && !availableBasinVariables.has(varB)) setVarB(firstAvailable);
+      if (bottomVarA !== "none" && !availableBasinVariables.has(bottomVarA)) setBottomVarA(firstAvailable);
+      if (bottomVarB !== "none" && !availableBasinVariables.has(bottomVarB)) setBottomVarB(firstAvailable);
+    }, [availableBasinVariables]);
     const toggleTopModel = id => setTopModels(m => m.includes(id) ? m.filter(x => x !== id) : [...m, id]);
     const toggleBottomModel = id => setBottomModels(m => m.includes(id) ? m.filter(x => x !== id) : [...m, id]);
     const availableStreamModels = useMemo(() => new Set(
@@ -1090,11 +1105,11 @@
     };
     const setBottomBasinSourceA = source => {
       setBottomVarASource(source);
-      setBottomVarA(defaultVariable(config, source, source === "hops" ? "mean_swe" : null));
+      setBottomVarA(defaultVariable(config, source, source === "hops" ? "mean_swe" : null, { basinTimeseries: true }));
     };
     const setBottomBasinSourceB = source => {
       setBottomVarBSource(source);
-      setBottomVarB(defaultVariable(config, source, source === "hops" ? "mean_runoff" : null));
+      setBottomVarB(defaultVariable(config, source, source === "hops" ? "mean_runoff" : null, { basinTimeseries: true }));
     };
     const setBasinMapSource = source => {
       setMapSource(source);
@@ -1116,7 +1131,7 @@
                 ),
                 topPlotMode === "basin" && e(React.Fragment, null,
                 e(SourceSelect, { value: varASource, onChange: setBasinSourceA, ariaLabel: "Basin variable A data source" }),
-                e(VariableSelect, { config, source: varASource, value: varA, onChange: setVarA, includeNone: true, noneLabel: "A = NONE", basinTimeseries: true }),
+                e(VariableSelect, { config, source: varASource, value: varA, onChange: setVarA, includeNone: true, noneLabel: "A = NONE", basinTimeseries: true, disabledValues: new Set([...sourceVariables(config, varASource, { basinTimeseries: true })].filter(variable => !availableBasinVariables.has(variable.id)).map(variable => variable.id)) }),
                 varA !== "none" && e("select", { className: "plot-kind-select", value: varAKind, onChange: ev => setVarAKind(ev.target.value), title: "Variable A plot type" },
                   e("option", { value: "line" }, "Line"),
                   e("option", { value: "bar" }, "Bar")
@@ -1142,7 +1157,7 @@
                   e("option", { value: "bar" }, "Bar")
                 ),
                 e(SourceSelect, { value: varBSource, onChange: setBasinSourceB, ariaLabel: "Basin variable B data source" }),
-                e(VariableSelect, { config, source: varBSource, value: varB, onChange: setVarB, includeNone: true, noneLabel: "B = NONE", basinTimeseries: true })
+                e(VariableSelect, { config, source: varBSource, value: varB, onChange: setVarB, includeNone: true, noneLabel: "B = NONE", basinTimeseries: true, disabledValues: new Set([...sourceVariables(config, varBSource, { basinTimeseries: true })].filter(variable => !availableBasinVariables.has(variable.id)).map(variable => variable.id)) })
                 )
               )
             ),
@@ -1170,7 +1185,7 @@
                 ),
                 bottomPlotMode === "basin" && e(React.Fragment, null,
                   e(SourceSelect, { value: bottomVarASource, onChange: setBottomBasinSourceA, ariaLabel: "Bottom basin variable A data source" }),
-                  e(VariableSelect, { config, source: bottomVarASource, value: bottomVarA, onChange: setBottomVarA, includeNone: true, noneLabel: "A = NONE", basinTimeseries: true }),
+                  e(VariableSelect, { config, source: bottomVarASource, value: bottomVarA, onChange: setBottomVarA, includeNone: true, noneLabel: "A = NONE", basinTimeseries: true, disabledValues: new Set([...sourceVariables(config, bottomVarASource, { basinTimeseries: true })].filter(variable => !availableBasinVariables.has(variable.id)).map(variable => variable.id)) }),
                   bottomVarA !== "none" && e("select", { className: "plot-kind-select", value: bottomVarAKind, onChange: ev => setBottomVarAKind(ev.target.value), title: "Bottom variable A plot type" },
                     e("option", { value: "line" }, "Line"),
                     e("option", { value: "bar" }, "Bar")
@@ -1194,7 +1209,7 @@
                   e("option", { value: "bar" }, "Bar")
                 ),
                 e(SourceSelect, { value: bottomVarBSource, onChange: setBottomBasinSourceB, ariaLabel: "Bottom basin variable B data source" }),
-                e(VariableSelect, { config, source: bottomVarBSource, value: bottomVarB, onChange: setBottomVarB, includeNone: true, noneLabel: "B = NONE", basinTimeseries: true })
+                e(VariableSelect, { config, source: bottomVarBSource, value: bottomVarB, onChange: setBottomVarB, includeNone: true, noneLabel: "B = NONE", basinTimeseries: true, disabledValues: new Set([...sourceVariables(config, bottomVarBSource, { basinTimeseries: true })].filter(variable => !availableBasinVariables.has(variable.id)).map(variable => variable.id)) })
               )
             ),
             visible.length && (bottomPlotMode === "streamflow"

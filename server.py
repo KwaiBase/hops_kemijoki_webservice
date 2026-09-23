@@ -15,6 +15,8 @@ CONTENT_DIR = Path(os.getenv("HOPS_CONTENT_DIR", ROOT / "content")).resolve()
 CONFIG = Path(os.getenv("HOPS_CONFIG_FILE", ROOT / "config" / "app.json")).resolve()
 BUNDLED_STATIONS_CONFIG = (ROOT / "config" / "observation-stations.json").resolve()
 STATIONS_CONFIG = Path(os.getenv("HOPS_STATIONS_CONFIG", BUNDLED_STATIONS_CONFIG)).resolve()
+BUNDLED_UI_CONFIG = (ROOT / "config" / "map-options.json").resolve()
+UI_CONFIG = Path(os.getenv("HOPS_UI_CONFIG", BUNDLED_UI_CONFIG)).resolve()
 BASE_PATH = os.getenv("HOPS_BASE_PATH", "").strip("/")
 BASE_PREFIX = f"/{BASE_PATH}" if BASE_PATH else ""
 DATA_BASE_URL = os.getenv("HOPS_DATA_BASE_URL", f"{BASE_PREFIX}/data" if BASE_PREFIX else "/data")
@@ -30,7 +32,7 @@ ENABLE_HILLSHADE = os.getenv("HOPS_ENABLE_HILLSHADE", "1").lower() not in ("0", 
 
 
 def read_json(path: Path):
-    return json.loads(path.read_text(encoding="utf-8"))
+    return json.loads(path.read_text(encoding="utf-8-sig"))
 
 
 def read_app_config():
@@ -41,6 +43,16 @@ def read_app_config():
         if not isinstance(stations, list):
             raise ValueError("Observation station configuration must be a JSON array")
         config["observationStations"] = stations
+    ui_path = UI_CONFIG if UI_CONFIG.exists() else BUNDLED_UI_CONFIG
+    if ui_path.exists():
+        ui_config = read_json(ui_path)
+        if not isinstance(ui_config, dict):
+            raise ValueError("Map option configuration must be a JSON object")
+        for key in ("mapVariables", "basinVariables"):
+            if key in ui_config:
+                if not isinstance(ui_config[key], list):
+                    raise ValueError(f"{key} must be a JSON array")
+                config[key] = ui_config[key]
     return config
 
 

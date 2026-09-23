@@ -45,6 +45,7 @@ The project command must print `hops-webservice`.
 
 - `deploy/buildconfig.local.yaml` defines the local-only `hops-webservice` ImageStream and BuildConfig.
 - `deploy/openshift.local.yaml` defines the local-only Deployment, Service, Route, and read-only NFS volume.
+- `config/map-options.json` is the bundled default for externally configurable map and basin-variable selections.
 
 Apply these when creating or intentionally reconciling OpenShift resources. They are not needed for every frontend release:
 
@@ -174,6 +175,12 @@ The file must contain a JSON array with entries shaped like:
 ```
 
 After changing it, refresh the application and verify `/api/config`, the station markers, and the corresponding files under `data/metobs/`.
+
+### Map and basin-variable configuration
+
+Map and basin selectors are controlled by `map-options.json`, expected in OpenShift at `/mnt/hops/config/map-options.json`. `mapVariables` controls variables offered on the main maps. `basinVariables` controls variables offered in basin-average plot selectors. Change either list to add or remove selectable variables, then refresh the application; no image rebuild or Deployment rollout is required.
+
+For basin variables, a CSV column is considered usable when at least one value is greater than `-99998`. Missing columns and columns containing only `-99998` or lower are disabled and visually muted in the selectors. The same rule applies to streamflow model toggles.
 
 ## Basemap
 
