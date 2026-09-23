@@ -7,23 +7,28 @@ Working runbook for publishing this repository to the live HOPS OpenShift deploy
 | Item | Value |
 | --- | --- |
 | OpenShift API | Obtain from the FMI OpenShift console |
-| Project | `hops-kemijoki-webservice` |
-| Public route | `https://hops-kemijoki-webservice-hops-kemijoki-webservice.apps.ock.fmi.fi` |
+| Project | `hops-webservice` |
+| Public route | `https://hops-webservice-hops-webservice.apps.ock.fmi.fi` |
 | Git repository | `https://github.com/KwaiBase/hops_kemijoki_webservice.git` |
 | Build branch | `master` |
-| BuildConfig/ImageStream | `hops-kemijoki-webservice` |
-| Deployment/Service/Route | `hops-kemijoki-webservice` |
+| BuildConfig/ImageStream | `hops-webservice` |
+| Deployment/Service/Route | `hops-webservice` |
 | Container port | `8000` |
 | Health endpoint | `/health` |
 | NFS mount | FMI-managed read-only mount -> `/mnt/hops` |
 | Application data | `/mnt/hops/data` |
 
-The active OpenShift resource name is `hops-kemijoki-webservice`. The former `hops-v2` name is obsolete.
+The active OpenShift resource name is `hops-webservice`. The former `hops-v2` name is obsolete.
+
+The OpenShift project/resource name (`hops-webservice`) is intentionally different from the
+Git repository name (`hops_kemijoki_webservice`). The OpenShift project name is tied to the
+existing NFS export and mount configuration and must not be renamed to match the repository;
+only the `BuildConfig` Git source URI changes when the repository moves.
 
 ## Rules and Prerequisites
 
 - Have `oc`, Git, Python, and `curl.exe` available.
-- Authenticate to OpenShift and select the `hops-kemijoki-webservice` project before acting.
+- Authenticate to OpenShift and select the `hops-webservice` project before acting.
 - Never put tokens, passwords, private keys, or operational data in Git, this file, or chat.
 - A Git push does not deploy anything by itself. A build and rollout are required.
 - The BuildConfig builds `master`, so push the intended commit there first.
@@ -33,17 +38,17 @@ The active OpenShift resource name is `hops-kemijoki-webservice`. The former `ho
 # Use the login command provided by the FMI OpenShift web console.
 oc login <fmi-openshift-api>
 oc whoami
-oc project hops-kemijoki-webservice
+oc project hops-webservice
 oc project -q
 oc auth can-i create builds.build.openshift.io
 oc auth can-i update deployments.apps
 ```
 
-The project command must print `hops-kemijoki-webservice`.
+The project command must print `hops-webservice`.
 
 ## Versioned OpenShift Manifests
 
-- `deploy/buildconfig.local.yaml` defines the local-only `hops-kemijoki-webservice` ImageStream and BuildConfig.
+- `deploy/buildconfig.local.yaml` defines the local-only `hops-webservice` ImageStream and BuildConfig.
 - `deploy/openshift.local.yaml` defines the local-only Deployment, Service, Route, and read-only NFS volume.
 - `config/map-options.json` is the bundled default for externally configurable map and basin-variable selections.
 - `config/display-options.json` is the bundled default for display behavior and defaults.
@@ -53,14 +58,14 @@ Apply these when creating or intentionally reconciling OpenShift resources. They
 ```powershell
 oc apply -f deploy/buildconfig.local.yaml
 oc apply -f deploy/openshift.local.yaml
-oc rollout status deployment/hops-kemijoki-webservice --timeout=180s
+oc rollout status deployment/hops-webservice --timeout=180s
 ```
 
 Review the live resources before applying the application manifest:
 
 ```powershell
-oc get deployment hops-kemijoki-webservice -o yaml
-oc get buildconfig hops-kemijoki-webservice -o yaml
+oc get deployment hops-webservice -o yaml
+oc get buildconfig hops-webservice -o yaml
 ```
 
 ## Normal Frontend or Application Release
@@ -97,10 +102,10 @@ git status -sb
 ### 3. Build the image
 
 ```powershell
-oc project hops-kemijoki-webservice
-oc start-build hops-kemijoki-webservice --follow
+oc project hops-webservice
+oc start-build hops-webservice --follow
 oc get builds
-oc get imagestreamtag hops-kemijoki-webservice:latest
+oc get imagestreamtag hops-webservice:latest
 ```
 
 The BuildConfig checks out GitHub `master`, uses the root `Containerfile`, and publishes to the internal ImageStream.
@@ -108,11 +113,11 @@ The BuildConfig checks out GitHub `master`, uses the root `Containerfile`, and p
 ### 4. Deploy the exact built image
 
 ```powershell
-$imageRef = oc get imagestreamtag hops-kemijoki-webservice:latest `
+$imageRef = oc get imagestreamtag hops-webservice:latest `
   -o jsonpath='{.image.dockerImageReference}'
 Write-Host $imageRef
-oc set image deployment/hops-kemijoki-webservice "hops-kemijoki-webservice=$imageRef"
-oc rollout status deployment/hops-kemijoki-webservice --timeout=180s
+oc set image deployment/hops-webservice "hops-webservice=$imageRef"
+oc rollout status deployment/hops-webservice --timeout=180s
 ```
 
 Record the Git commit, build name, image reference/digest, and rollout result.
@@ -121,8 +126,8 @@ Record the Git commit, build name, image reference/digest, and rollout result.
 
 ```powershell
 oc get deployment,pods,service,route
-oc logs deployment/hops-kemijoki-webservice --tail=100
-$routeHost = oc get route hops-kemijoki-webservice -o jsonpath='{.spec.host}'
+oc logs deployment/hops-webservice --tail=100
+$routeHost = oc get route hops-webservice -o jsonpath='{.spec.host}'
 $routeUrl = "https://$routeHost"
 curl.exe -i "$routeUrl/health"
 curl.exe -i "$routeUrl/api/config"
@@ -148,8 +153,8 @@ Files under the NFS data directory are read directly and do not require an image
 Verify the mount after an update:
 
 ```powershell
-oc exec deployment/hops-kemijoki-webservice -- ls -la /mnt/hops/data
-oc exec deployment/hops-kemijoki-webservice -- find /mnt/hops/data -maxdepth 2 -type d
+oc exec deployment/hops-webservice -- ls -la /mnt/hops/data
+oc exec deployment/hops-webservice -- find /mnt/hops/data -maxdepth 2 -type d
 ```
 
 Preserve the filename and directory contracts in `server.py` and `config/app.json`. Write replacement files to a temporary name and rename them into place where possible.
@@ -209,17 +214,17 @@ The former CARTO dark URL displayed `API KEY REQUIRED`. Do not restore it withou
 Inspect known images:
 
 ```powershell
-oc rollout history deployment/hops-kemijoki-webservice
-oc get replicasets -l app=hops-kemijoki-webservice `
+oc rollout history deployment/hops-webservice
+oc get replicasets -l app=hops-webservice `
   -o custom-columns=NAME:.metadata.name,IMAGE:.spec.template.spec.containers[0].image,CREATED:.metadata.creationTimestamp
 ```
 
 Restore a previously verified immutable image reference:
 
 ```powershell
-oc set image deployment/hops-kemijoki-webservice `
-  "hops-kemijoki-webservice=<previous-working-image-reference>"
-oc rollout status deployment/hops-kemijoki-webservice --timeout=180s
+oc set image deployment/hops-webservice `
+  "hops-webservice=<previous-working-image-reference>"
+oc rollout status deployment/hops-webservice --timeout=180s
 ```
 
 Validate `/health` and the live application after rollback. Do not rely only on `oc rollout undo` when history refers to mutable `latest`.
@@ -230,16 +235,16 @@ Validate `/health` and the live application after rollback. Do not rely only on 
 # Change not visible
 git log -1 --oneline
 oc get builds
-oc get imagestreamtag hops-kemijoki-webservice:latest
-oc get deployment hops-kemijoki-webservice -o jsonpath='{.spec.template.spec.containers[0].image}'
+oc get imagestreamtag hops-webservice:latest
+oc get deployment hops-webservice -o jsonpath='{.spec.template.spec.containers[0].image}'
 
 # Pod or route failure
 oc get pods -o wide
-oc describe pod -l app=hops-kemijoki-webservice
-oc logs deployment/hops-kemijoki-webservice
+oc describe pod -l app=hops-webservice
+oc logs deployment/hops-webservice
 oc get events --sort-by=.lastTimestamp
-oc get service hops-kemijoki-webservice
-oc get endpointslice -l kubernetes.io/service-name=hops-kemijoki-webservice
+oc get service hops-webservice
+oc get endpointslice -l kubernetes.io/service-name=hops-webservice
 ```
 
 For map failures, inspect `runtime-config.js`, browser network requests, pod logs, NFS GeoJSON paths, and external tile requests separately.
