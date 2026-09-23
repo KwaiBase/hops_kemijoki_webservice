@@ -586,6 +586,9 @@ label {
   flex-wrap: wrap;
   gap: 6px;
 }
+.model-unavailable {
+  opacity: 0.45;
+}
 .streamflow-head .models {
   flex-wrap: nowrap;
   gap: 5px;

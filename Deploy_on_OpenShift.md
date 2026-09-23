@@ -152,6 +152,8 @@ oc exec deployment/hops-webservice -- find /mnt/hops/data -maxdepth 2 -type d
 
 Preserve the filename and directory contracts in `server.py` and `config/app.json`. Write replacement files to a temporary name and rename them into place where possible.
 
+For streamflow model CSVs, a missing file makes that model unavailable. A model whose `value` entries are all `-99998` or lower is also treated as unavailable; its streamflow checkbox is disabled and it is excluded from the graph and statistics. At least one value greater than `-99998` is required for the model to be selectable.
+
 ### Weather station configuration
 
 Station count, labels, coordinates, types, and CSV filenames are read from the external `observation-stations.json` file. In OpenShift this file is expected at `/mnt/hops/config/observation-stations.json`. Replace that file on the mounted data volume to add, remove, or move stations without rebuilding the image or rolling out the Deployment. The application falls back to the bundled template if the external file is absent.

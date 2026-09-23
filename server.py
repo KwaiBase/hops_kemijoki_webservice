@@ -101,7 +101,10 @@ def read_streamflow_rows(basin: str, config):
             continue
         filename_id = model_id.replace("_", "-")
         model_rows = []
-        for row in read_csv(streamflow_dir / f"{basin_file_prefix}_{filename_id}.csv"):
+        model_path = streamflow_dir / f"{basin_file_prefix}_{filename_id}.csv"
+        if not model_path.exists():
+            continue
+        for row in read_csv(model_path):
             model_rows.append({"date": row.get("date"), model_id: row.get("value")})
         row_sets.append(model_rows)
 

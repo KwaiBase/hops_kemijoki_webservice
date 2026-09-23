@@ -987,6 +987,16 @@
     }, [visible, date]);
     const toggleTopModel = id => setTopModels(m => m.includes(id) ? m.filter(x => x !== id) : [...m, id]);
     const toggleBottomModel = id => setBottomModels(m => m.includes(id) ? m.filter(x => x !== id) : [...m, id]);
+    const availableStreamModels = useMemo(() => new Set(
+      config.models
+        .filter(model => rows.some(row => Number(row[model.id]) > -99998))
+        .map(model => model.id)
+    ), [config.models, rows]);
+    useEffect(() => {
+      if (!rows.length) return;
+      setTopModels(models => models.filter(id => availableStreamModels.has(id)));
+      setBottomModels(models => models.filter(id => availableStreamModels.has(id)));
+    }, [rows, availableStreamModels]);
     const variableA = varA === "none" ? null : config.variables.find(v => v.id === varA);
     const variableB = varB === "none" ? null : config.variables.find(v => v.id === varB);
     const variableSeries = [
@@ -1001,9 +1011,9 @@
     ].filter(Boolean);
     const streamSeriesFor = (showObservations, selectedModels) => [
       showObservations && { id: "observations", label: "Observations", color: "#ffffff", kind: "line-markers", flagField: "observations_flag" },
-      ...config.models.filter(m => selectedModels.includes(m.id)).map(m => ({ id: m.id, label: m.label, color: m.color }))
+      ...config.models.filter(m => availableStreamModels.has(m.id) && selectedModels.includes(m.id)).map(m => ({ id: m.id, label: m.label, color: m.color }))
     ].filter(Boolean);
-    const streamStatsFor = (showStats, selectedModels) => showStats && e("div", { className: "stats" }, config.models.filter(m => selectedModels.includes(m.id)).map(m => {
+    const streamStatsFor = (showStats, selectedModels) => showStats && e("div", { className: "stats" }, config.models.filter(m => availableStreamModels.has(m.id) && selectedModels.includes(m.id)).map(m => {
       const s = visible.length ? metrics(visible, m.id) : {};
       return e("div", { className: "stat", key: m.id }, e("strong", { style: { color: m.color } }, m.label), e("span", null, `RMSE ${fmt(s.rmse)}`), e("span", null, `NSE ${fmt(s.nse)}`), e("span", null, `KGE ${fmt(s.kge)}`));
     }));
@@ -1122,7 +1132,7 @@
                 topPlotMode === "streamflow" && e("div", { className: "stream-controls" },
                   e("div", { className: "models" },
                     e("label", null, e("input", { type: "checkbox", checked: topShowStreamObservations, onChange: ev => setTopShowStreamObservations(ev.target.checked) }), "Obs."),
-                    config.models.map(m => e("label", { key: m.id }, e("input", { type: "checkbox", checked: topModels.includes(m.id), onChange: () => toggleTopModel(m.id) }), m.label))
+                    config.models.map(m => e("label", { key: m.id, className: availableStreamModels.has(m.id) ? "" : "model-unavailable" }, e("input", { type: "checkbox", checked: availableStreamModels.has(m.id) && topModels.includes(m.id), disabled: !availableStreamModels.has(m.id), onChange: () => toggleTopModel(m.id) }), m.label))
                   ),
                   e("label", { className: "stats-toggle stream-stats-toggle" }, e("input", { type: "checkbox", checked: topShowStreamStats, onChange: ev => setTopShowStreamStats(ev.target.checked) }), "Stats")
                 ),
@@ -1175,7 +1185,7 @@
               bottomPlotMode === "streamflow" ? e("div", { className: "stream-controls" },
                 e("div", { className: "models" },
                   e("label", null, e("input", { type: "checkbox", checked: bottomShowStreamObservations, onChange: ev => setBottomShowStreamObservations(ev.target.checked) }), "Obs."),
-                  config.models.map(m => e("label", { key: m.id }, e("input", { type: "checkbox", checked: bottomModels.includes(m.id), onChange: () => toggleBottomModel(m.id) }), m.label))
+                  config.models.map(m => e("label", { key: m.id, className: availableStreamModels.has(m.id) ? "" : "model-unavailable" }, e("input", { type: "checkbox", checked: availableStreamModels.has(m.id) && bottomModels.includes(m.id), disabled: !availableStreamModels.has(m.id), onChange: () => toggleBottomModel(m.id) }), m.label))
                 ),
                 e("label", { className: "stats-toggle stream-stats-toggle" }, e("input", { type: "checkbox", checked: bottomShowStreamStats, onChange: ev => setBottomShowStreamStats(ev.target.checked) }), "Stats")
               ) : bottomPlotMode === "basin" && e("div", { className: "control-row basin-average-controls basin-average-controls-b" },
