@@ -161,6 +161,23 @@ Preserve the filename and directory contracts in `server.py` and `config/app.jso
 
 For streamflow model CSVs, a missing file makes that model unavailable. A model whose `value` entries are all `-99998` or lower is also treated as unavailable; its streamflow checkbox is disabled and it is excluded from the graph and statistics. At least one value greater than `-99998` is required for the model to be selectable.
 
+### Quick Reference: External Configuration Files
+
+Every file below is read fresh from disk on each `/api/config` request (no caching), so editing the
+mounted file and refreshing the browser is enough. No image rebuild and no `oc rollout` is required
+for any file in this table. `config/app.json` is the one exception: it has no mounted override and is
+always read from the built image.
+
+| File | Mounted path | Controls |
+| --- | --- | --- |
+| `observation-stations.json` | `/mnt/hops/config/observation-stations.json` | Station id, label, `lat`/`lon`, `type` (`temperature`/`precipitation`), and `dataFile` name |
+| `map-options.json` | `/mnt/hops/config/map-options.json` | `mapVariables` (main maps) and `basinVariables` (basin plot selector) — which already-defined variable IDs are selectable |
+| `display-options.json` | `/mnt/hops/config/display-options.json` | Model labels/colors/default selection, basin list and map label position/zoom footprint, default map source/variable and mask opacity, legend `title`/`unit`/`min`/`max`/color `stops` per variable ID, observation defaults, history/forecast/animation/date-range settings, plot defaults, and `noDataThreshold` |
+| `app.json` (not externally configurable) | Baked into image only, no mount override | Variable catalog (id/label/unit/palette), map bounds/zoom/center, logos, GeoJSON source paths |
+
+Replace files at their temporary name and rename into place. See the subsections below for the exact
+shape of each file.
+
 ### Weather station configuration
 
 Station count, labels, coordinates, types, and CSV filenames are read from the external `observation-stations.json` file. In OpenShift this file is expected at `/mnt/hops/config/observation-stations.json`. Replace that file on the mounted data volume to add, remove, or move stations without rebuilding the image or rolling out the Deployment. The application falls back to the bundled template if the external file is absent.
