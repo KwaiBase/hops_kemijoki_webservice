@@ -742,6 +742,8 @@
     const [animate, setAnimate] = useState(false);
     const [showRivers, setShowRivers] = useState(true);
     const [showObs, setShowObs] = useState(observationOptions.enabledByDefault !== false);
+    const [showLegendA, setShowLegendA] = useState(true);
+    const [showLegendB, setShowLegendB] = useState(true);
     const [maskA, setMaskA] = useState(true);
     const [maskB, setMaskB] = useState(true);
     const [obsType, setObsType] = useState(observationOptions.defaultType || "temperature");
@@ -777,10 +779,11 @@
             hasVariableMask(varA) && e("label", { className: "mask-toggle" }, e("input", { type: "checkbox", checked: maskA, onChange: ev => setMaskA(ev.target.checked) }), "Mask")
           ),
           e("div", { className: "control-row map-a-layer-toggle" },
-            e("label", null, e("input", { type: "checkbox", checked: showRivers, onChange: ev => setShowRivers(ev.target.checked) }), "River network")
+            e("label", null, e("input", { type: "checkbox", checked: showRivers, onChange: ev => setShowRivers(ev.target.checked) }), "River network"),
+            e("label", null, e("input", { type: "checkbox", checked: showLegendA, onChange: ev => setShowLegendA(ev.target.checked) }), "Legend")
           )
         ),
-        e(HopsMap, { id: "map-a", config, date, variable: varA, showRivers, showPoints: showRivers, showObs: false, showMask: !hasVariableMask(varA) || maskA, basins: config.basins, onBasin: openBasin, masterRef: mapA, slaveRef: mapB, preloadDates: dates })
+        e(HopsMap, { id: "map-a", config, date, variable: varA, showRivers, showPoints: showRivers, showObs: false, showMask: !hasVariableMask(varA) || maskA, showLegend: showLegendA, basins: config.basins, onBasin: openBasin, masterRef: mapA, slaveRef: mapB, preloadDates: dates })
       ),
       e("aside", { className: "panel date-column" },
         e("div", { className: "date-control-row" },
@@ -808,10 +811,11 @@
           e("div", { className: "control-row" },
             e(SourceSelect, { value: sourceB, onChange: setMapSourceB, ariaLabel: "Map B data source" }),
             e(VariableSelect, { config, source: sourceB, value: varB, onChange: setVarB }),
-            hasVariableMask(varB) && e("label", { className: "mask-toggle" }, e("input", { type: "checkbox", checked: maskB, onChange: ev => setMaskB(ev.target.checked) }), "Mask")
+            hasVariableMask(varB) && e("label", { className: "mask-toggle" }, e("input", { type: "checkbox", checked: maskB, onChange: ev => setMaskB(ev.target.checked) }), "Mask"),
+            e("label", null, e("input", { type: "checkbox", checked: showLegendB, onChange: ev => setShowLegendB(ev.target.checked) }), "Legend")
           )
         ),
-        e(HopsMap, { id: "map-b", config, date, variable: varB, showRivers: false, showPoints: false, showObs, showMask: !hasVariableMask(varB) || maskB, obsType, basins: config.basins, obsStations: config.observationStations, masterRef: mapA, slaveRef: mapB, passive: true, preloadDates: dates })
+        e(HopsMap, { id: "map-b", config, date, variable: varB, showRivers: false, showPoints: false, showObs, showMask: !hasVariableMask(varB) || maskB, showLegend: showLegendB, obsType, basins: config.basins, obsStations: config.observationStations, masterRef: mapA, slaveRef: mapB, passive: true, preloadDates: dates })
       )
     );
   }
@@ -966,6 +970,7 @@
     const [mapSource, setMapSource] = useState("hops");
     const [mapVar, setMapVar] = useState(defaultVariable(config, mapOptions.defaultSource || "hops", mapOptions.basinDefaultVariable || "soil_state"));
     const [mapMask, setMapMask] = useState(true);
+    const [showLegend, setShowLegend] = useState(true);
     const [varASource, setVarASource] = useState("hops");
     const [varBSource, setVarBSource] = useState("hops");
     const [varA, setVarA] = useState(defaultVariable(config, "hops", "mean_runoff", { basinTimeseries: true }));
@@ -1296,10 +1301,11 @@
             e("div", { className: "control-row" },
               e(SourceSelect, { value: mapSource, onChange: setBasinMapSource, ariaLabel: "Basin map data source" }),
               e(VariableSelect, { config, source: mapSource, value: mapVar, onChange: setMapVar }),
-              hasVariableMask(mapVar) && e("label", { className: "mask-toggle" }, e("input", { type: "checkbox", checked: mapMask, onChange: ev => setMapMask(ev.target.checked) }), "Mask")
+              hasVariableMask(mapVar) && e("label", { className: "mask-toggle" }, e("input", { type: "checkbox", checked: mapMask, onChange: ev => setMapMask(ev.target.checked) }), "Mask"),
+              e("label", null, e("input", { type: "checkbox", checked: showLegend, onChange: ev => setShowLegend(ev.target.checked) }), "Legend")
             )
           ),
-          e(HopsMap, { id: "basin-map", config, date, variable: mapVar, showRivers: true, showPoints: true, showObs: true, showMask: !hasVariableMask(mapVar) || mapMask, basins: [basin], basinId: basin.id, preloadDates: visibleDates })
+          e(HopsMap, { id: "basin-map", config, date, variable: mapVar, showRivers: true, showPoints: true, showObs: true, showMask: !hasVariableMask(mapVar) || mapMask, showLegend, basins: [basin], basinId: basin.id, preloadDates: visibleDates })
         )
       )
     );

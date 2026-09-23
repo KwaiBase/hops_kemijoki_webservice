@@ -9,7 +9,7 @@ Working runbook for publishing this repository to the live HOPS OpenShift deploy
 | OpenShift API | Obtain from the FMI OpenShift console |
 | Project | `hops-webservice` |
 | Public route | `https://hops-webservice-hops-webservice.apps.ock.fmi.fi` |
-| Git repository | `https://github.com/ikonenjaakko-lab/hops_webservice.git` |
+| Git repository | `https://github.com/KwaiBase/hops_kemijoki_webservice.git` |
 | Build branch | `master` |
 | BuildConfig/ImageStream | `hops-webservice` |
 | Deployment/Service/Route | `hops-webservice` |
