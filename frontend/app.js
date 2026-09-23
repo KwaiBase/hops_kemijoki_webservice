@@ -543,10 +543,13 @@
       const pngSource = rasterSource(config, overlayVar);
       const rasterUrl = rasterDate => `${dataUrl(`/png/${pngSource}/${overlayVar}/${rasterDate}.png`)}?v=${encodeURIComponent(config.rasterVersion || "1")}`;
       const currentPng = rasterUrl(date);
+      // Preload the full visible date range (nearest to the selected date first) so animation and
+      // date-rail scrubbing hit the cache instead of loading each raster on demand.
       const timelineIndex = preloadDates.indexOf(date);
-      const upcomingDates = (timelineIndex >= 0 ? preloadDates.slice(timelineIndex + 1) : preloadDates)
-        .filter((candidate, index, values) => candidate !== date && values.indexOf(candidate) === index)
-        .slice(0, 3);
+      const uniqueDates = [...new Set(preloadDates)].filter(candidate => candidate !== date);
+      const upcomingDates = timelineIndex >= 0
+        ? uniqueDates.sort((a, b) => Math.abs(preloadDates.indexOf(a) - timelineIndex) - Math.abs(preloadDates.indexOf(b) - timelineIndex))
+        : uniqueDates;
       const preloadUrls = [currentPng, ...upcomingDates.map(rasterUrl)];
       setRasterLoading({ active: true, loaded: 0, total: preloadUrls.length });
       preloadUrls.forEach((url, index) => {
