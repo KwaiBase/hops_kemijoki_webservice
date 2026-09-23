@@ -113,6 +113,7 @@ config/
   app.json
   observation-stations.json             # supplied externally for station locations
   map-options.json                      # supplied externally for map/plot selections
+  display-options.json                  # supplied externally for display defaults
 content/
   pages/*.md
 ```
@@ -131,4 +132,5 @@ running data-dependent views locally.
 - Add basins in `config/app.json`; add basin GeoJSON and timeseries file using the basin id
 - Add meteorological observation stations in `config/observation-stations.json`; add station CSV files in `data/metobs/fmi_tempc_{station_id}.csv` or `data/metobs/fmi_precip_{station_id}.csv`
 - Configure main-map variables and basin-plot variables in `config/map-options.json`; in OpenShift use the mounted `/mnt/hops/config/map-options.json`
+- Configure display defaults, basin metadata, models, map opacity, time controls, and the no-data threshold in `config/display-options.json`; in OpenShift use `/mnt/hops/config/display-options.json`
 - Edit CMS text in `content/pages/*.md`

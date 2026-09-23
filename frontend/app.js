@@ -101,8 +101,10 @@
     const outer = [[south, west], [south, east], [north, east], [north, west]];
     return [outer, ...geoJsonOuterRings(geojson)];
   };
-  const FORECAST_DAYS = 8;
-  const HISTORY_DAYS = 17;
+  const defaultDisplayOptions = {
+    noDataThreshold: -99998,
+    timeControls: { historyDays: 17, forecastDays: 8, animationIntervalMs: 850, ranges: [30, 90, 180, 365] }
+  };
   const isoFromDate = d => {
     const yyyy = d.getFullYear();
     const mm = String(d.getMonth() + 1).padStart(2, "0");
@@ -110,7 +112,7 @@
     return `${yyyy}-${mm}-${dd}`;
   };
   const todayISO = () => isoFromDate(new Date());
-  const forecastEndISO = () => addDays(todayISO(), FORECAST_DAYS);
+  const forecastEndISO = config => addDays(todayISO(), config.displayOptions?.timeControls?.forecastDays ?? defaultDisplayOptions.timeControls.forecastDays);
 
   // Work with ISO date strings to avoid timezone drift in the date rail and CSV lookups.
   const addDays = (iso, n) => {
@@ -158,8 +160,9 @@
     );
   }
 
-  function useDateSequence(start) {
-    return useMemo(() => Array.from({ length: HISTORY_DAYS + FORECAST_DAYS + 1 }, (_, i) => addDays(start, i)), [start]);
+  function useDateSequence(start, config) {
+    const timeControls = config.displayOptions?.timeControls || defaultDisplayOptions.timeControls;
+    return useMemo(() => Array.from({ length: timeControls.historyDays + timeControls.forecastDays + 1 }, (_, i) => addDays(start, i)), [start, timeControls.historyDays, timeControls.forecastDays]);
   }
 
   // Small deterministic placeholder trend used for dummy forecast point markers.
@@ -372,6 +375,7 @@
     const basinFitPadding = [18, 18];
     const [metRowsByStation, setMetRowsByStation] = useState({});
     const [rasterLoading, setRasterLoading] = useState({ active: false, loaded: 0, total: 0 });
+    const mapOptions = config.displayOptions?.map || {};
 
     useEffect(() => {
       const mapBounds = !basinId && config.mainMapBounds ? config.mainMapBounds : config.maxBounds;
@@ -547,7 +551,7 @@
             style: {
               stroke: false,
               fillColor: "#0b0f12",
-              fillOpacity: 0.85
+              fillOpacity: mapOptions.variableMaskOpacity ?? 0.85
             }
           }).addTo(map);
           layersRef.current.push(l);
@@ -560,7 +564,7 @@
             pane: "project-mask-pane",
             stroke: false,
             fillColor: "#000000",
-            fillOpacity: 0.48,
+            fillOpacity: mapOptions.projectMaskOpacity ?? 0.48,
             fillRule: "evenodd",
             interactive: false
           }).addTo(map);
@@ -592,7 +596,7 @@
             pane: "basin-mask-pane",
             stroke: false,
             fillColor: "#000000",
-            fillOpacity: 0.5,
+            fillOpacity: mapOptions.basinMaskOpacity ?? 0.5,
             fillRule: "evenodd",
             interactive: false
           }).addTo(map);
@@ -693,28 +697,32 @@
 
   // Main comparison view with synchronized HOPS maps and the shared date rail.
   function MainView({ config, openBasin }) {
-    const [start, setStart] = useState(addDays(todayISO(), -HISTORY_DAYS));
-    const dates = useDateSequence(start);
+    const displayOptions = config.displayOptions || defaultDisplayOptions;
+    const timeControls = displayOptions.timeControls || defaultDisplayOptions.timeControls;
+    const mapOptions = displayOptions.map || {};
+    const observationOptions = displayOptions.observations || {};
+    const [start, setStart] = useState(addDays(todayISO(), -timeControls.historyDays));
+    const dates = useDateSequence(start, config);
     const [date, setDate] = useState(todayISO());
-    const [sourceA, setSourceA] = useState("hops");
-    const [sourceB, setSourceB] = useState("hops");
-    const [varA, setVarA] = useState(defaultVariable(config, "hops", "mean_runoff"));
-    const [varB, setVarB] = useState(defaultVariable(config, "hops", "soil_state"));
+    const [sourceA, setSourceA] = useState(mapOptions.defaultSource || "hops");
+    const [sourceB, setSourceB] = useState(mapOptions.defaultSource || "hops");
+    const [varA, setVarA] = useState(defaultVariable(config, sourceA, mapOptions.mainDefaultVariable || "mean_runoff"));
+    const [varB, setVarB] = useState(defaultVariable(config, sourceB, mapOptions.comparisonDefaultVariable || "soil_state"));
     const [animate, setAnimate] = useState(false);
     const [showRivers, setShowRivers] = useState(true);
-    const [showObs, setShowObs] = useState(true);
+    const [showObs, setShowObs] = useState(observationOptions.enabledByDefault !== false);
     const [maskA, setMaskA] = useState(true);
     const [maskB, setMaskB] = useState(true);
-    const [obsType, setObsType] = useState("temperature");
+    const [obsType, setObsType] = useState(observationOptions.defaultType || "temperature");
     const dateListRef = useRef(null);
     const mapA = useRef(null);
     const mapB = useRef(null);
 
     useEffect(() => {
       if (!animate) return;
-      const t = setInterval(() => setDate(d => dates[(dates.indexOf(d) + 1 + dates.length) % dates.length] || dates[0]), 850);
+      const t = setInterval(() => setDate(d => dates[(dates.indexOf(d) + 1 + dates.length) % dates.length] || dates[0]), timeControls.animationIntervalMs || 850);
       return () => clearInterval(t);
-    }, [animate, dates]);
+    }, [animate, dates, timeControls.animationIntervalMs]);
     useEffect(() => {
       if (!dateListRef.current) return;
       dateListRef.current.scrollTop = dateListRef.current.scrollHeight;
@@ -728,7 +736,7 @@
       setSourceB(source);
       setVarB(defaultVariable(config, source, source === "hops" ? "soil_state" : null));
     };
-    const reset = () => { setStart(addDays(todayISO(), -HISTORY_DAYS)); setDate(todayISO()); };
+    const reset = () => { setStart(addDays(todayISO(), -timeControls.historyDays)); setDate(todayISO()); };
     return e("main", { className: "main-grid" },
         e("section", { className: "panel map-panel" },
           e("div", { className: "panel-head panel-head-map-a" },
@@ -917,10 +925,15 @@
   // Basin view combines basin-average plots, streamflow plots, a vertical date scrubber, and a focused map.
   function BasinView({ config, basinId, close }) {
     const basin = config.basins.find(b => b.id === basinId) || config.basins[0];
+    const displayOptions = config.displayOptions || defaultDisplayOptions;
+    const mapOptions = displayOptions.map || {};
+    const timeControls = displayOptions.timeControls || defaultDisplayOptions.timeControls;
+    const plotDefaults = displayOptions.plotDefaults || {};
+    const noDataThreshold = displayOptions.noDataThreshold ?? defaultDisplayOptions.noDataThreshold;
     const [rows, setRows] = useState([]);
     const [date, setDate] = useState(todayISO());
     const [mapSource, setMapSource] = useState("hops");
-    const [mapVar, setMapVar] = useState(defaultVariable(config, "hops", "soil_state"));
+    const [mapVar, setMapVar] = useState(defaultVariable(config, mapOptions.defaultSource || "hops", mapOptions.basinDefaultVariable || "soil_state"));
     const [mapMask, setMapMask] = useState(true);
     const [varASource, setVarASource] = useState("hops");
     const [varBSource, setVarBSource] = useState("hops");
@@ -928,8 +941,8 @@
     const [varB, setVarB] = useState(defaultVariable(config, "hops", "mean_swe", { basinTimeseries: true }));
     const [varAKind, setVarAKind] = useState("line");
     const [varBKind, setVarBKind] = useState("line");
-    const [topPlotMode, setTopPlotMode] = useState("basin");
-    const [bottomPlotMode, setBottomPlotMode] = useState("streamflow");
+    const [topPlotMode, setTopPlotMode] = useState(plotDefaults.topMode || "basin");
+    const [bottomPlotMode, setBottomPlotMode] = useState(plotDefaults.bottomMode || "streamflow");
     const [bottomVarASource, setBottomVarASource] = useState("hops");
     const [bottomVarBSource, setBottomVarBSource] = useState("hops");
     const [bottomVarA, setBottomVarA] = useState(defaultVariable(config, "hops", "mean_swe", { basinTimeseries: true }));
@@ -941,9 +954,9 @@
     const [bottomShowStreamObservations, setBottomShowStreamObservations] = useState(true);
     const [topShowStreamStats, setTopShowStreamStats] = useState(true);
     const [bottomShowStreamStats, setBottomShowStreamStats] = useState(true);
-    const [topModels, setTopModels] = useState(["hops", "hops_xgb"]);
-    const [bottomModels, setBottomModels] = useState(["hops", "hops_xgb"]);
-    const [topPlotPct, setTopPlotPct] = useState(52);
+    const [topModels, setTopModels] = useState(plotDefaults.topModels || ["hops", "hops_xgb"]);
+    const [bottomModels, setBottomModels] = useState(plotDefaults.bottomModels || ["hops", "hops_xgb"]);
+    const [topPlotPct, setTopPlotPct] = useState(plotDefaults.topPlotPercent || 52);
     const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
     const [zoomRange, setZoomRange] = useState(null);
     const plotsRef = useRef(null);
@@ -970,7 +983,7 @@
     const baseVisible = useMemo(() => {
       if (!rows.length) return [];
       if (isCurrentYear) {
-        const endDate = forecastEndISO();
+        const endDate = forecastEndISO(config);
         const endInRows = rows.findIndex(r => r.date === endDate);
         const end = endInRows >= 0 ? endInRows : rows.length - 1;
         return rows.slice(Math.max(0, end - days + 1), end + 1);
@@ -986,9 +999,9 @@
     const availableBasinVariables = useMemo(() => new Set(
       sourceVariables(config, "hops", { basinTimeseries: true })
         .concat(SOURCE_OPTIONS.slice(1).flatMap(source => sourceVariables(config, source.id, { basinTimeseries: true })))
-        .filter(variable => rows.some(row => Number(row[variable.id]) > -99998))
+        .filter(variable => rows.some(row => Number(row[variable.id]) > noDataThreshold))
         .map(variable => variable.id)
-    ), [config, rows]);
+    ), [config, rows, noDataThreshold]);
     useEffect(() => {
       if (!visible.length) return;
       if (!visible.some(r => r.date === date)) setDate(visible[visible.length - 1].date);
@@ -1004,9 +1017,9 @@
     const toggleBottomModel = id => setBottomModels(m => m.includes(id) ? m.filter(x => x !== id) : [...m, id]);
     const availableStreamModels = useMemo(() => new Set(
       config.models
-        .filter(model => rows.some(row => Number(row[model.id]) > -99998))
+        .filter(model => rows.some(row => Number(row[model.id]) > noDataThreshold))
         .map(model => model.id)
-    ), [config.models, rows]);
+    ), [config.models, rows, noDataThreshold]);
     useEffect(() => {
       if (!rows.length) return;
       setTopModels(models => models.filter(id => availableStreamModels.has(id)));
@@ -1045,7 +1058,7 @@
         : bottomPlotCollapsed
           ? "minmax(0, 1fr) auto auto"
           : `minmax(0, ${topPlotPct}fr) auto minmax(0, ${100 - topPlotPct}fr)`;
-    const rangeOptions = isCurrentYear ? [30, 90, 180, 365] : [365];
+    const rangeOptions = isCurrentYear ? (timeControls.ranges || [30, 90, 180, 365]) : [365];
     const rangeLabels = { 30: "1M", 90: "3M", 180: "6M", 365: "1Y" };
     const zoomTimeRange = (start, end) => {
       setZoomRange({ start, end });

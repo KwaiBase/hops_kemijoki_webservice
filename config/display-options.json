@@ -1,0 +1,45 @@
+{
+  "noDataThreshold": -99998,
+  "models": [
+    {"id": "hops", "label": "HOPS", "color": "#66d9ef", "defaultSelected": true},
+    {"id": "hops_xgb", "label": "HOPS-XGB", "color": "#f8d56b", "defaultSelected": true},
+    {"id": "lstm", "label": "LSTM", "color": "#b48cff", "defaultSelected": false},
+    {"id": "gru", "label": "GRU", "color": "#ff8fb1", "defaultSelected": false},
+    {"id": "lisflood", "label": "LISFLOOD", "color": "#81d66b", "defaultSelected": false}
+  ],
+  "basins": [
+    {"id": "6501700", "label": "Kemihaara", "lat": 67.19853341174975, "lon": 27.785512523108022, "areaKm2": 0, "extentLon": 0.55, "extentLat": 0.34},
+    {"id": "6503720", "label": "Sinettajarvi", "lat": 66.617942146605742, "lon": 25.427099584942237, "areaKm2": 0, "extentLon": 0.55, "extentLat": 0.34},
+    {"id": "6503600", "label": "Marraskoski", "lat": 66.7948771883473, "lon": 25.420244929297844, "areaKm2": 0, "extentLon": 0.55, "extentLat": 0.34},
+    {"id": "6503510", "label": "Unari", "lat": 67.130470932617072, "lon": 25.747274253422621, "areaKm2": 0, "extentLon": 0.55, "extentLat": 0.34},
+    {"id": "6503200", "label": "Kongas", "lat": 67.878636023045459, "lon": 24.844374139421465, "areaKm2": 0, "extentLon": 0.55, "extentLat": 0.34},
+    {"id": "6503000", "label": "Ounasjarvi", "lat": 68.396118802649994, "lon": 23.752422561759822, "areaKm2": 0, "extentLon": 0.55, "extentLat": 0.34},
+    {"id": "6502400", "label": "Vikajarvi", "lat": 66.621822463212993, "lon": 26.219519118485621, "areaKm2": 0, "extentLon": 0.55, "extentLat": 0.34}
+  ],
+  "map": {
+    "defaultSource": "hops",
+    "mainDefaultVariable": "mean_runoff",
+    "comparisonDefaultVariable": "soil_state",
+    "basinDefaultVariable": "soil_state",
+    "projectMaskOpacity": 0.48,
+    "basinMaskOpacity": 0.5,
+    "variableMaskOpacity": 0.85
+  },
+  "observations": {
+    "enabledByDefault": true,
+    "defaultType": "temperature"
+  },
+  "timeControls": {
+    "historyDays": 17,
+    "forecastDays": 8,
+    "animationIntervalMs": 850,
+    "ranges": [30, 90, 180, 365]
+  },
+  "plotDefaults": {
+    "topMode": "basin",
+    "bottomMode": "streamflow",
+    "topModels": ["hops", "hops_xgb"],
+    "bottomModels": ["hops", "hops_xgb"],
+    "topPlotPercent": 52
+  }
+}

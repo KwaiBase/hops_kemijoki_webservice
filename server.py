@@ -17,6 +17,8 @@ BUNDLED_STATIONS_CONFIG = (ROOT / "config" / "observation-stations.json").resolv
 STATIONS_CONFIG = Path(os.getenv("HOPS_STATIONS_CONFIG", BUNDLED_STATIONS_CONFIG)).resolve()
 BUNDLED_UI_CONFIG = (ROOT / "config" / "map-options.json").resolve()
 UI_CONFIG = Path(os.getenv("HOPS_UI_CONFIG", BUNDLED_UI_CONFIG)).resolve()
+BUNDLED_DISPLAY_CONFIG = (ROOT / "config" / "display-options.json").resolve()
+DISPLAY_CONFIG = Path(os.getenv("HOPS_DISPLAY_CONFIG", BUNDLED_DISPLAY_CONFIG)).resolve()
 BASE_PATH = os.getenv("HOPS_BASE_PATH", "").strip("/")
 BASE_PREFIX = f"/{BASE_PATH}" if BASE_PATH else ""
 DATA_BASE_URL = os.getenv("HOPS_DATA_BASE_URL", f"{BASE_PREFIX}/data" if BASE_PREFIX else "/data")
@@ -53,6 +55,17 @@ def read_app_config():
                 if not isinstance(ui_config[key], list):
                     raise ValueError(f"{key} must be a JSON array")
                 config[key] = ui_config[key]
+    display_path = DISPLAY_CONFIG if DISPLAY_CONFIG.exists() else BUNDLED_DISPLAY_CONFIG
+    if display_path.exists():
+        display_options = read_json(display_path)
+        if not isinstance(display_options, dict):
+            raise ValueError("Display option configuration must be a JSON object")
+        config["displayOptions"] = display_options
+        for key in ("models", "basins"):
+            if key in display_options:
+                if not isinstance(display_options[key], list):
+                    raise ValueError(f"displayOptions.{key} must be a JSON array")
+                config[key] = display_options[key]
     return config
 
 
