@@ -74,7 +74,6 @@ def json_response(handler: SimpleHTTPRequestHandler, payload, status=200):
     body = json.dumps(payload, indent=2).encode("utf-8")
     handler.send_response(status)
     handler.send_header("Content-Type", "application/json; charset=utf-8")
-    handler.send_header("Cache-Control", "no-store")
     handler.send_header("Content-Length", str(len(body)))
     handler.end_headers()
     handler.wfile.write(body)
@@ -84,7 +83,6 @@ def text_response(handler: SimpleHTTPRequestHandler, body: str, content_type="te
     data = body.encode("utf-8")
     handler.send_response(status)
     handler.send_header("Content-Type", content_type)
-    handler.send_header("Cache-Control", "no-store")
     handler.send_header("Content-Length", str(len(data)))
     handler.end_headers()
     handler.wfile.write(data)
@@ -162,12 +160,16 @@ class HopsHandler(SimpleHTTPRequestHandler):
 
     def end_headers(self):
         self.send_header("Access-Control-Allow-Origin", "*")
-        self.send_header("Cache-Control", "no-store")
+        self.send_header("Cache-Control", getattr(self, "_cache_control", "no-store"))
         super().end_headers()
 
     def do_GET(self):
         parsed = urlparse(self.path)
         path = strip_base(parsed.path)
+        # Static rasters/GeoJSON under /data/ are safe to cache with revalidation: the stdlib
+        # file handler already supports If-Modified-Since, so unchanged assets return a fast
+        # 304 instead of a full re-download on every request.
+        self._cache_control = "no-cache" if path.startswith("/data/") else "no-store"
 
         try:
             if path == "/health":
