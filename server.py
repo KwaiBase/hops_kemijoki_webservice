@@ -5,6 +5,7 @@ import json
 import mimetypes
 import os
 from http.server import ThreadingHTTPServer, SimpleHTTPRequestHandler
+from io import StringIO
 from pathlib import Path
 from urllib.parse import parse_qs, quote, urlparse
 
@@ -88,6 +89,27 @@ def text_response(handler: SimpleHTTPRequestHandler, body: str, content_type="te
     handler.wfile.write(data)
 
 
+def csv_response(handler: SimpleHTTPRequestHandler, rows, filename: str, status=200):
+    fieldnames = ["date"]
+    seen = set(fieldnames)
+    for row in rows:
+        for key in row.keys():
+            if key not in seen:
+                fieldnames.append(key)
+                seen.add(key)
+    buffer = StringIO()
+    writer = csv.DictWriter(buffer, fieldnames=fieldnames, extrasaction="ignore")
+    writer.writeheader()
+    writer.writerows(rows)
+    body = buffer.getvalue().encode("utf-8")
+    handler.send_response(status)
+    handler.send_header("Content-Type", "text/csv; charset=utf-8")
+    handler.send_header("Content-Disposition", f'attachment; filename="{filename}"')
+    handler.send_header("Content-Length", str(len(body)))
+    handler.end_headers()
+    handler.wfile.write(body)
+
+
 def read_csv(path: Path):
     with path.open(newline="", encoding="utf-8") as f:
         return list(csv.DictReader(f))
@@ -133,6 +155,17 @@ def read_streamflow_rows(basin: str, config):
         row_sets.append(model_rows)
 
     return merge_rows_by_date(*row_sets)
+
+
+def read_basin_rows(basin: str, config):
+    basin_file = f"{quote(basin, safe='')}.csv"
+    return merge_rows_by_date(
+        read_csv(DATA_DIR / "basins" / "hops" / basin_file),
+        read_csv(DATA_DIR / "basins" / "ecmwf" / basin_file),
+        read_csv(DATA_DIR / "basins" / "hsaf" / basin_file),
+        read_csv(DATA_DIR / "basins" / "clms" / basin_file),
+        read_streamflow_rows(basin, config),
+    )
 
 
 def strip_base(path: str) -> str:
@@ -199,21 +232,25 @@ class HopsHandler(SimpleHTTPRequestHandler):
 
             if path.startswith("/api/timeseries/"):
                 basin = path.rsplit("/", 1)[-1]
-                basin_file = f"{quote(basin, safe='')}.csv"
                 config = read_json(CONFIG)
-                rows = merge_rows_by_date(
-                    read_csv(DATA_DIR / "basins" / "hops" / basin_file),
-                    read_csv(DATA_DIR / "basins" / "ecmwf" / basin_file),
-                    read_csv(DATA_DIR / "basins" / "hsaf" / basin_file),
-                    read_csv(DATA_DIR / "basins" / "clms" / basin_file),
-                    read_streamflow_rows(basin, config),
-                )
+                rows = read_basin_rows(basin, config)
                 return json_response(self, {"basin": basin, "rows": rows})
 
             if path.startswith("/api/met-observations/"):
                 station = path.rsplit("/", 1)[-1]
                 file_path = DATA_DIR / "metobs" / f"{quote(station, safe='')}.csv"
                 return json_response(self, {"station": station, "rows": read_csv(file_path)})
+
+            if path.startswith("/api/download/basin/"):
+                basin = path.rsplit("/", 1)[-1].removesuffix(".csv")
+                config = read_json(CONFIG)
+                rows = read_basin_rows(basin, config)
+                return csv_response(self, rows, f"{basin}.csv")
+
+            if path.startswith("/api/download/met-observations/"):
+                station = path.rsplit("/", 1)[-1].removesuffix(".csv")
+                file_path = DATA_DIR / "metobs" / f"{quote(station, safe='')}.csv"
+                return csv_response(self, read_csv(file_path), f"{station}.csv")
 
             if path.startswith("/api/pages/"):
                 slug = path.rsplit("/", 1)[-1]

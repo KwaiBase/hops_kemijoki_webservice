@@ -1329,6 +1329,29 @@
     return e("main", { className: "panel page", dangerouslySetInnerHTML: { __html: `<p>${markdown(md)}</p>` } });
   }
 
+  // Download page combines the CMS intro text with generated CSV download links for basins and met stations.
+  function DownloadPage({ config }) {
+    const [md, setMd] = useState("");
+    useEffect(() => { fetch(apiUrl("/api/pages/download")).then(r => r.json()).then(d => setMd(d.markdown || "# Download")); }, []);
+    const basins = config.basins || [];
+    const stations = config.observationStations || [];
+    return e("main", { className: "panel page download-page" },
+      e("div", { dangerouslySetInnerHTML: { __html: `<p>${markdown(md)}</p>` } }),
+      basins.length > 0 && e("section", { className: "download-section" },
+        e("h2", null, "Basin data (CSV)"),
+        e("ul", { className: "download-list" }, basins.map(b => e("li", { key: b.id },
+          e("a", { href: apiUrl(`/api/download/basin/${encodeURIComponent(b.id)}.csv`) }, `${b.label} (${b.id})`)
+        )))
+      ),
+      stations.length > 0 && e("section", { className: "download-section" },
+        e("h2", null, "Meteorological station observations (CSV)"),
+        e("ul", { className: "download-list" }, stations.map(s => e("li", { key: s.id },
+          e("a", { href: apiUrl(`/api/download/met-observations/${encodeURIComponent(metObservationSource(s))}.csv`) }, s.label)
+        )))
+      )
+    );
+  }
+
   // Top-level router: the app keeps page state client-side and swaps between maps, pages, and basin detail.
   function App() {
     const config = useConfig();
@@ -1339,6 +1362,7 @@
       e(Header, { config, view: basin ? "basin" : view, setView: v => { setBasin(null); setView(v); } }),
       basin ? e(BasinView, { config, basinId: basin, close: () => setBasin(null) }) :
       view === "main" ? e(MainView, { config, openBasin: setBasin }) :
+      view === "download" ? e(DownloadPage, { config }) :
       e(CmsPage, { id: view })
     );
   }
