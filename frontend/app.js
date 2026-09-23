@@ -117,7 +117,7 @@
   };
   const defaultDisplayOptions = {
     noDataThreshold: -99998,
-    timeControls: { historyDays: 17, forecastDays: 8, animationIntervalMs: 850, ranges: [30, 90, 180, 365] }
+    timeControls: { historyDays: 17, forecastDays: 8, animationIntervalMs: 2500, ranges: [30, 90, 180, 365] }
   };
   const isoFromDate = d => {
     const yyyy = d.getFullYear();
