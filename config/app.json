@@ -77,13 +77,6 @@
     {"id": "6503000", "label": "Ounasjarvi", "lat": 68.396118802649994, "lon": 23.752422561759822, "areaKm2": 0, "extentLon": 0.55, "extentLat": 0.34},
     {"id": "6502400", "label": "Vikajarvi", "lat": 66.621822463212993, "lon": 26.219519118485621, "areaKm2": 0, "extentLon": 0.55, "extentLat": 0.34}
   ],
-  "observationStations": [
-    {"id": "rovaniemi_met", "label": "Rovaniemi Met Station", "lat": 66.56, "lon": 25.83, "type": "temperature", "dataFile": "fmi_tempc_999999.csv"},
-    {"id": "sodankyla_met", "label": "Sodankyla Met Station", "lat": 67.37, "lon": 26.63, "type": "temperature", "dataFile": "fmi_tempc_999998.csv"},
-    {"id": "kittila_precip", "label": "Kittila Precipitation Station", "lat": 67.66, "lon": 24.90, "type": "precipitation", "dataFile": "fmi_precip_999997.csv"},
-    {"id": "kemijarvi_precip", "label": "Kemijarvi Precipitation Station", "lat": 66.71, "lon": 27.43, "type": "precipitation", "dataFile": "fmi_precip_999996.csv"},
-    {"id": "inari_met", "label": "Inari Met Station", "lat": 68.90, "lon": 27.03, "type": "temperature", "dataFile": "fmi_tempc_999995.csv"}
-  ],
   "pages": [
     {"id": "information", "label": "Information", "source": "content/pages/information.md"},
     {"id": "download", "label": "Download", "source": "content/pages/download.md"},

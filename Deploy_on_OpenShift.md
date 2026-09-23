@@ -152,6 +152,27 @@ oc exec deployment/hops-webservice -- find /mnt/hops/data -maxdepth 2 -type d
 
 Preserve the filename and directory contracts in `server.py` and `config/app.json`. Write replacement files to a temporary name and rename them into place where possible.
 
+### Weather station configuration
+
+Station count, labels, coordinates, types, and CSV filenames are read from the external `observation-stations.json` file. In OpenShift this file is expected at `/mnt/hops/config/observation-stations.json`. Replace that file on the mounted data volume to add, remove, or move stations without rebuilding the image or rolling out the Deployment. The application falls back to the bundled template if the external file is absent.
+
+The file must contain a JSON array with entries shaped like:
+
+```json
+[
+  {
+    "id": "example_station",
+    "label": "Example Station",
+    "lat": 67.0,
+    "lon": 26.0,
+    "type": "temperature",
+    "dataFile": "fmi_tempc_example.csv"
+  }
+]
+```
+
+After changing it, refresh the application and verify `/api/config`, the station markers, and the corresponding files under `data/metobs/`.
+
 ## Basemap
 
 The current watermark-free settings are:

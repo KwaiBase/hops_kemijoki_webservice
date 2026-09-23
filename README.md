@@ -111,6 +111,7 @@ data/
   geojson/rivers.geojson
 config/
   app.json
+  observation-stations.json             # supplied externally for station locations
 content/
   pages/*.md
 ```
@@ -127,5 +128,5 @@ running data-dependent views locally.
 - Add streamflow observation data in `data/basins/streamflow/{basin}_obs.csv`; use `flag` value `1` for unreliable observations
 - Add streamflow model data in `data/basins/streamflow/{basin}_{model}.csv`
 - Add basins in `config/app.json`; add basin GeoJSON and timeseries file using the basin id
-- Add meteorological observation stations in `config/app.json`; add station CSV files in `data/metobs/fmi_tempc_{station_id}.csv` or `data/metobs/fmi_precip_{station_id}.csv`
+- Add meteorological observation stations in `config/observation-stations.json`; add station CSV files in `data/metobs/fmi_tempc_{station_id}.csv` or `data/metobs/fmi_precip_{station_id}.csv`
 - Edit CMS text in `content/pages/*.md`

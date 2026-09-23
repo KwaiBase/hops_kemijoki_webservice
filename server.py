@@ -13,6 +13,8 @@ FRONTEND = Path(os.getenv("HOPS_FRONTEND_DIR", ROOT / "frontend")).resolve()
 DATA_DIR = Path(os.getenv("HOPS_DATA_DIR", ROOT / "data")).resolve()
 CONTENT_DIR = Path(os.getenv("HOPS_CONTENT_DIR", ROOT / "content")).resolve()
 CONFIG = Path(os.getenv("HOPS_CONFIG_FILE", ROOT / "config" / "app.json")).resolve()
+BUNDLED_STATIONS_CONFIG = (ROOT / "config" / "observation-stations.json").resolve()
+STATIONS_CONFIG = Path(os.getenv("HOPS_STATIONS_CONFIG", BUNDLED_STATIONS_CONFIG)).resolve()
 BASE_PATH = os.getenv("HOPS_BASE_PATH", "").strip("/")
 BASE_PREFIX = f"/{BASE_PATH}" if BASE_PATH else ""
 DATA_BASE_URL = os.getenv("HOPS_DATA_BASE_URL", f"{BASE_PREFIX}/data" if BASE_PREFIX else "/data")
@@ -29,6 +31,17 @@ ENABLE_HILLSHADE = os.getenv("HOPS_ENABLE_HILLSHADE", "1").lower() not in ("0", 
 
 def read_json(path: Path):
     return json.loads(path.read_text(encoding="utf-8"))
+
+
+def read_app_config():
+    config = read_json(CONFIG)
+    stations_path = STATIONS_CONFIG if STATIONS_CONFIG.exists() else BUNDLED_STATIONS_CONFIG
+    if stations_path.exists():
+        stations = read_json(stations_path)
+        if not isinstance(stations, list):
+            raise ValueError("Observation station configuration must be a JSON array")
+        config["observationStations"] = stations
+    return config
 
 
 def json_response(handler: SimpleHTTPRequestHandler, payload, status=200):
@@ -143,7 +156,7 @@ class HopsHandler(SimpleHTTPRequestHandler):
                 )
 
             if path == "/api/config":
-                return json_response(self, read_json(CONFIG))
+                return json_response(self, read_app_config())
 
             if path == "/api/dates":
                 query = parse_qs(parsed.query)
