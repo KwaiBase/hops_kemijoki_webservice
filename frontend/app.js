@@ -1051,11 +1051,13 @@
     }, [availableBasinVariables]);
     const toggleTopModel = id => setTopModels(m => m.includes(id) ? m.filter(x => x !== id) : [...m, id]);
     const toggleBottomModel = id => setBottomModels(m => m.includes(id) ? m.filter(x => x !== id) : [...m, id]);
+    const basinEnabledModels = Array.isArray(basin.enabledModels) ? new Set(basin.enabledModels) : null;
     const availableStreamModels = useMemo(() => new Set(
       config.models
+        .filter(model => !basinEnabledModels || basinEnabledModels.has(model.id))
         .filter(model => rows.some(row => Number(row[model.id]) > noDataThreshold))
         .map(model => model.id)
-    ), [config.models, rows, noDataThreshold]);
+    ), [config.models, rows, noDataThreshold, basinEnabledModels]);
     useEffect(() => {
       if (!rows.length) return;
       setTopModels(models => models.filter(id => availableStreamModels.has(id)));
@@ -1085,8 +1087,10 @@
     const bottomStreamSeries = streamSeriesFor(bottomShowStreamObservations, bottomModels);
     const topStreamStats = streamStatsFor(topShowStreamStats, topModels);
     const bottomStreamStats = streamStatsFor(bottomShowStreamStats, bottomModels);
-    const topPlotCollapsed = topPlotMode === "none" || (topPlotMode === "basin" && variableSeries.length === 0);
-    const bottomPlotCollapsed = bottomPlotMode === "none" || (bottomPlotMode === "basin" && bottomVariableSeries.length === 0);
+    const topPlotCollapsed = topPlotMode === "none";
+    const bottomPlotCollapsed = bottomPlotMode === "none";
+    const topPlotEmpty = !topPlotCollapsed && (topPlotMode === "streamflow" ? !visible.length : variableSeries.length === 0);
+    const bottomPlotEmpty = !bottomPlotCollapsed && (bottomPlotMode === "streamflow" ? !visible.length : bottomVariableSeries.length === 0);
     const plotGridRows = topPlotCollapsed && bottomPlotCollapsed
       ? "auto auto auto"
       : topPlotCollapsed
@@ -1210,9 +1214,11 @@
                 )
               )
             ),
-            visible.length && (topPlotMode === "streamflow"
-              ? e(Plot, { rows: visible, series: topStreamSeries, selected: date, onPick: setDate, onRangeSelect: zoomTimeRange, forecastBoundary: todayISO() })
-              : topPlotMode === "basin" && variableSeries.length > 0 && e(Plot, { rows: visible, series: variableSeries, selected: date, onPick: setDate, onRangeSelect: zoomTimeRange, dualAxis: true, forecastBoundary: todayISO() })),
+            topPlotEmpty
+              ? e("div", { className: "plot-empty" }, "No data available")
+              : visible.length > 0 && (topPlotMode === "streamflow"
+                ? e(Plot, { rows: visible, series: topStreamSeries, selected: date, onPick: setDate, onRangeSelect: zoomTimeRange, forecastBoundary: todayISO() })
+                : topPlotMode === "basin" && variableSeries.length > 0 && e(Plot, { rows: visible, series: variableSeries, selected: date, onPick: setDate, onRangeSelect: zoomTimeRange, dualAxis: true, forecastBoundary: todayISO() })),
             topPlotMode === "streamflow" && topStreamStats
           ),
           e("div", { className: "plot-resizer", onPointerDown: startPlotResize, title: "Drag to resize plots" },
@@ -1261,9 +1267,11 @@
                 e(VariableSelect, { config, source: bottomVarBSource, value: bottomVarB, onChange: setBottomVarB, includeNone: true, noneLabel: "B = NONE", basinTimeseries: true, disabledValues: new Set([...sourceVariables(config, bottomVarBSource, { basinTimeseries: true })].filter(variable => !availableBasinVariables.has(variable.id)).map(variable => variable.id)) })
               )
             ),
-            visible.length && (bottomPlotMode === "streamflow"
-              ? e(Plot, { rows: visible, series: bottomStreamSeries, selected: date, onPick: setDate, onRangeSelect: zoomTimeRange, forecastBoundary: todayISO() })
-              : bottomPlotMode === "basin" && bottomVariableSeries.length > 0 && e(Plot, { rows: visible, series: bottomVariableSeries, selected: date, onPick: setDate, onRangeSelect: zoomTimeRange, dualAxis: true, forecastBoundary: todayISO() })),
+            bottomPlotEmpty
+              ? e("div", { className: "plot-empty" }, "No data available")
+              : visible.length > 0 && (bottomPlotMode === "streamflow"
+                ? e(Plot, { rows: visible, series: bottomStreamSeries, selected: date, onPick: setDate, onRangeSelect: zoomTimeRange, forecastBoundary: todayISO() })
+                : bottomPlotMode === "basin" && bottomVariableSeries.length > 0 && e(Plot, { rows: visible, series: bottomVariableSeries, selected: date, onPick: setDate, onRangeSelect: zoomTimeRange, dualAxis: true, forecastBoundary: todayISO() })),
             bottomPlotMode === "streamflow" && bottomStreamStats
           )
         ),

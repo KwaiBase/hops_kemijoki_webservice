@@ -172,7 +172,7 @@ always read from the built image.
 | --- | --- | --- |
 | `observation-stations.json` | `/mnt/hops/config/observation-stations.json` | Station id, label, `lat`/`lon`, `type` (`temperature`/`precipitation`), and `dataFile` name |
 | `map-options.json` | `/mnt/hops/config/map-options.json` | `mapVariables` (main maps) and `basinVariables` (basin plot selector) — which already-defined variable IDs are selectable |
-| `display-options.json` | `/mnt/hops/config/display-options.json` | Model labels/colors/default selection, basin list and map label position/zoom footprint, default map source/variable and mask opacity, legend `title`/`unit`/`min`/`max`/color `stops` per variable ID, observation defaults, history/forecast/animation/date-range settings, plot defaults, and `noDataThreshold` |
+| `display-options.json` | `/mnt/hops/config/display-options.json` | Model labels/colors/default selection, basin list and map label position/zoom footprint, per-basin `enabledModels` allow-list, default map source/variable and mask opacity, legend `title`/`unit`/`min`/`max`/color `stops` per variable ID, observation defaults, history/forecast/animation/date-range settings, plot defaults, and `noDataThreshold` |
 | `app.json` (not externally configurable) | Baked into image only, no mount override | Variable catalog (id/label/unit/palette), map bounds/zoom/center, logos, GeoJSON source paths |
 
 Replace files at their temporary name and rename into place. See the subsections below for the exact
@@ -210,6 +210,14 @@ For basin variables, a CSV column is considered usable when at least one value i
 The external `/mnt/hops/config/display-options.json` file can also control model labels/colors/default selections, the basin list and outlet coordinates, map default variables and mask opacity, observation defaults, history/forecast lengths, animation speed, graph ranges, plot defaults, and the no-data threshold. Edit the mounted file and refresh the application; no image rebuild or rollout is required.
 
 It also controls map legends through the `legends` object, keyed by variable ID. Each legend can define `title`, `unit`, optional `min`/`max`, and ordered color `stops` with `label` and `color`. Each map has its own `Legend` checkbox so users can hide the legend when map space is limited.
+
+Each entry in `basins` can optionally list `enabledModels`, an array of model IDs (matching the top-level `models` list) that are allowed to appear as selectable streamflow checkboxes for that basin:
+
+```json
+{ "id": "6501700", "label": "Kemihaara", "lat": 67.19, "lon": 27.79, "enabledModels": ["hops", "hops_xgb", "lstm"] }
+```
+
+If `enabledModels` is omitted, all models in `models` remain candidates for that basin, same as before. A model must still have usable data (see the CSV rule above) to become tickable; `enabledModels` only restricts which models can ever be offered for that basin, regardless of data. Refresh the browser after editing; no image rebuild or rollout is required.
 
 ### CMS pages and figures
 

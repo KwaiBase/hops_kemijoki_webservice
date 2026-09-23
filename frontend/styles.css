@@ -600,6 +600,14 @@ label {
 .plot-panel-collapsed {
   grid-template-rows: auto;
 }
+.plot-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 0;
+  color: var(--muted);
+  font-size: 12px;
+}
 .plot-kind-select {
   max-width: 74px;
 }
