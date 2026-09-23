@@ -387,6 +387,7 @@
     const divRef = useRef(null);
     const mapRef = useRef(null);
     const layersRef = useRef([]);
+    const rasterLayerRef = useRef(null);
     const basinViewRef = useRef(null);
     const syncing = useRef(false);
     const basinFitPadding = [18, 18];
@@ -552,13 +553,31 @@
         : uniqueDates;
       const preloadUrls = [currentPng, ...upcomingDates.map(rasterUrl)];
       setRasterLoading({ active: true, loaded: 0, total: preloadUrls.length });
+      const fadeTimeouts = [];
+      const targetOpacity = mode === "obs" ? 0.45 : 0.58;
+      const fadeMs = 350;
       preloadUrls.forEach((url, index) => {
         loadRasterImage(url).then(available => {
           if (cancelled) return;
           setRasterLoading(prev => ({ ...prev, loaded: prev.loaded + 1, active: prev.loaded + 1 < prev.total }));
           if (index === 0 && available) {
-            const imageLayer = L.imageOverlay(url, config.overlayBounds, { opacity: mode === "obs" ? 0.45 : 0.58, crossOrigin: true }).addTo(map);
-            layersRef.current.push(imageLayer);
+            // Crossfade: keep the previous raster visible and fade the new one in over it,
+            // instead of swapping instantly, so animation/scrubbing looks smooth.
+            if (rasterLayerRef.current?.url === url) return;
+            const previous = rasterLayerRef.current;
+            const nextLayer = L.imageOverlay(url, config.overlayBounds, { opacity: 0, crossOrigin: true }).addTo(map);
+            rasterLayerRef.current = { layer: nextLayer, url };
+            const el = nextLayer.getElement();
+            if (el) {
+              el.style.transition = `opacity ${fadeMs}ms ease`;
+              requestAnimationFrame(() => nextLayer.setOpacity(targetOpacity));
+              fadeTimeouts.push(setTimeout(() => {
+                if (!cancelled && previous && map.hasLayer(previous.layer)) map.removeLayer(previous.layer);
+              }, fadeMs + 40));
+            } else {
+              nextLayer.setOpacity(targetOpacity);
+              if (previous && map.hasLayer(previous.layer)) map.removeLayer(previous.layer);
+            }
           }
         });
       });
@@ -703,7 +722,7 @@
           layersRef.current.push(marker);
         });
       }
-      return () => { cancelled = true; };
+      return () => { cancelled = true; fadeTimeouts.forEach(clearTimeout); };
     }, [date, variable, mode, showRivers, showPoints, showObs, showMask, obsType, basinId, obsStations, metRowsByStation, preloadDates]);
 
     const loadingPercent = rasterLoading.total ? Math.round((rasterLoading.loaded / rasterLoading.total) * 100) : 0;
