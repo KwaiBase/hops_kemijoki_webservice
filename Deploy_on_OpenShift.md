@@ -189,6 +189,10 @@ The external `/mnt/hops/config/display-options.json` file can also control model
 
 It also controls map legends through the `legends` object, keyed by variable ID. Each legend can define `title`, `unit`, optional `min`/`max`, and ordered color `stops` with `label` and `color`. Each map has its own `Legend` checkbox so users can hide the legend when map space is limited.
 
+### CMS pages and figures
+
+The `information`, `contact`, `download`, and `links` pages are loaded from `/mnt/hops/content/pages/` when `HOPS_CONTENT_DIR` is configured. Replace the corresponding Markdown files and refresh the browser; no image rebuild or rollout is required. The bundled repository pages are used as a fallback when an external page is absent. Markdown image syntax can reference figures stored alongside the page, for example `![Map overview](overview.png)`.
+
 ## Basemap
 
 The current watermark-free settings are:

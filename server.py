@@ -12,6 +12,7 @@ ROOT = Path(__file__).resolve().parent
 FRONTEND = Path(os.getenv("HOPS_FRONTEND_DIR", ROOT / "frontend")).resolve()
 DATA_DIR = Path(os.getenv("HOPS_DATA_DIR", ROOT / "data")).resolve()
 CONTENT_DIR = Path(os.getenv("HOPS_CONTENT_DIR", ROOT / "content")).resolve()
+BUNDLED_CONTENT_DIR = (ROOT / "content").resolve()
 CONFIG = Path(os.getenv("HOPS_CONFIG_FILE", ROOT / "config" / "app.json")).resolve()
 BUNDLED_STATIONS_CONFIG = (ROOT / "config" / "observation-stations.json").resolve()
 STATIONS_CONFIG = Path(os.getenv("HOPS_STATIONS_CONFIG", BUNDLED_STATIONS_CONFIG)).resolve()
@@ -150,7 +151,10 @@ class HopsHandler(SimpleHTTPRequestHandler):
         if clean.startswith("data/"):
             return str(DATA_DIR / clean.removeprefix("data/"))
         if clean.startswith("content/"):
-            return str(CONTENT_DIR / clean.removeprefix("content/"))
+            content_path = CONTENT_DIR / clean.removeprefix("content/")
+            if content_path.exists():
+                return str(content_path)
+            return str(BUNDLED_CONTENT_DIR / clean.removeprefix("content/"))
         if clean in ("", "/"):
             return str(FRONTEND / "index.html")
         candidate = FRONTEND / clean
@@ -212,6 +216,8 @@ class HopsHandler(SimpleHTTPRequestHandler):
             if path.startswith("/api/pages/"):
                 slug = path.rsplit("/", 1)[-1]
                 file_path = CONTENT_DIR / "pages" / f"{quote(slug, safe='')}.md"
+                if not file_path.exists():
+                    file_path = BUNDLED_CONTENT_DIR / "pages" / f"{quote(slug, safe='')}.md"
                 if not file_path.exists():
                     return json_response(self, {"error": "Page not found"}, 404)
                 return json_response(self, {"id": slug, "markdown": file_path.read_text(encoding="utf-8")})

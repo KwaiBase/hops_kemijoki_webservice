@@ -138,6 +138,11 @@
 
   function markdown(md) {
     return md
+      .replace(/!\[([^\]]*)\]\(([^)]+)\)/g, (match, alt, source) => {
+        const src = /^(https?:|\/)/.test(source) ? source : `${basePath}/content/pages/${source}`;
+        return `<img class="page-figure" src="${src}" alt="${alt}">`;
+      })
+      .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2">$1</a>')
       .replace(/^# (.*)$/gm, "<h1>$1</h1>")
       .replace(/^## (.*)$/gm, "<h2>$1</h2>")
       .replace(/^- (.*)$/gm, "<li>$1</li>")
@@ -152,7 +157,6 @@
   }
 
   function Header({ config, view, setView }) {
-    const pages = config.pages.map(p => p.id);
     return e(React.Fragment, null,
       e("header", { className: "topbar" },
         e("div", { className: "brand" },
@@ -168,8 +172,7 @@
       ),
       e("nav", { className: "nav" },
         e("button", { className: view === "main" ? "active" : "", onClick: () => setView("main") }, "Maps"),
-        ...config.pages.map(p => e("button", { key: p.id, className: view === p.id ? "active" : "", onClick: () => setView(p.id) }, p.label)),
-        e("button", { className: view === "admin" ? "active" : "", onClick: () => setView("admin") }, "Admin")
+        ...config.pages.map(p => e("button", { key: p.id, className: view === p.id ? "active" : "", onClick: () => setView(p.id) }, p.label))
       )
     );
   }
@@ -1315,20 +1318,7 @@
     return e("main", { className: "panel page", dangerouslySetInnerHTML: { __html: `<p>${markdown(md)}</p>` } });
   }
 
-  function Admin({ config }) {
-    return e("main", { className: "page" },
-      e("h1", null, "Admin"),
-      e("p", null, "This lightweight admin area documents the editable file-based configuration used by the app. Update config/app.json and content/pages/*.md to manage variables, models, basins, and CMS pages."),
-      e("div", { className: "admin-grid" },
-        e("div", { className: "admin-block" }, e("h2", null, "Variables"), config.variables.map(v => e("p", { key: v.id }, `${v.id}: ${v.label} (${v.unit})`))),
-        e("div", { className: "admin-block" }, e("h2", null, "Models"), config.models.map(m => e("p", { key: m.id }, `${m.id}: ${m.label}`))),
-        e("div", { className: "admin-block" }, e("h2", null, "Basins"), config.basins.map(b => e("p", { key: b.id }, `${b.id}: ${b.label}`))),
-        e("div", { className: "admin-block" }, e("h2", null, "Pages"), config.pages.map(p => e("p", { key: p.id }, `${p.id}: ${p.source}`)))
-      )
-    );
-  }
-
-  // Top-level router: the app keeps page state client-side and swaps between maps, pages, admin, and basin detail.
+  // Top-level router: the app keeps page state client-side and swaps between maps, pages, and basin detail.
   function App() {
     const config = useConfig();
     const [view, setView] = useState("main");
@@ -1338,7 +1328,6 @@
       e(Header, { config, view: basin ? "basin" : view, setView: v => { setBasin(null); setView(v); } }),
       basin ? e(BasinView, { config, basinId: basin, close: () => setBasin(null) }) :
       view === "main" ? e(MainView, { config, openBasin: setBasin }) :
-      view === "admin" ? e(Admin, { config }) :
       e(CmsPage, { id: view })
     );
   }
