@@ -59,7 +59,7 @@ label {
   position: absolute;
   z-index: 900;
   right: 10px;
-  bottom: 28px;
+  top: 10px;
   width: min(150px, calc(100% - 20px));
   padding: 8px 9px;
   border: 1px solid rgba(237, 247, 251, 0.45);
