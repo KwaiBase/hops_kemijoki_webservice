@@ -63,7 +63,7 @@
   "timeControls": {
     "historyDays": 17,
     "forecastDays": 8,
-    "animationIntervalMs": 2500,
+    "animationIntervalMs": 850,
     "ranges": [30, 90, 180, 365]
   },
   "plotDefaults": {
