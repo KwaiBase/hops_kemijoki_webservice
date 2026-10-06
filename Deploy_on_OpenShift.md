@@ -203,7 +203,7 @@ After changing it, refresh the application and verify `/api/config`, the station
 
 Map and basin selectors are controlled by `map-options.json`, expected in OpenShift at `/mnt/hops/config/map-options.json`. `mapVariables` controls variables offered on the main maps. `basinVariables` controls variables offered in basin-average plot selectors. Change either list to add or remove selectable variables, then refresh the application; no image rebuild or Deployment rollout is required.
 
-For basin variables, a CSV column is considered usable when at least one value is greater than `-99998`. Missing columns and columns containing only `-99998` or lower are disabled and visually muted in the selectors. The same rule applies to streamflow model toggles.
+For basin variables, a CSV column is considered usable when at least one value is greater than the configured `noDataThreshold` (default `-99998`). Missing columns and columns containing only values at or below that threshold are disabled and visually muted in the selectors. The same rule applies to streamflow model toggles. Individual values at or below the threshold, as well as blank cells, are treated as missing in plots: lines break at those dates, bars/markers are omitted, and streamflow skill metrics exclude pairs where either value is missing. Use a value such as `-99999` for missing data; do not leave cells blank.
 
 ### General display options
 
