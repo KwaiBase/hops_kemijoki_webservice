@@ -112,7 +112,10 @@
   };
   const outsideMaskRings = (geojson, bounds) => {
     const [[south, west], [north, east]] = bounds;
-    const outer = [[south, west], [south, east], [north, east], [north, west]];
+    // Extend far past the map bounds so wide or tall viewports never reveal the mask edge.
+    const pad = 30;
+    const s = Math.max(-85, south - pad), n = Math.min(85, north + pad), w = west - pad, ea = east + pad;
+    const outer = [[s, w], [s, ea], [n, ea], [n, w]];
     return [outer, ...geoJsonOuterRings(geojson)];
   };
   const defaultDisplayOptions = {
