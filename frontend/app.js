@@ -1128,6 +1128,7 @@
       if (!visible.some(r => r.date === date)) setDate(visible[visible.length - 1].date);
     }, [visible, date]);
     useEffect(() => {
+      if (!rows.length) return;
       const firstAvailable = availableBasinVariables.values().next().value || "none";
       if (varA !== "none" && !availableBasinVariables.has(varA)) setVarA(firstAvailable);
       if (varB !== "none" && !availableBasinVariables.has(varB)) setVarB(firstAvailable);
