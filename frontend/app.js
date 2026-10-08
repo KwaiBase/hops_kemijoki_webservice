@@ -119,6 +119,8 @@
     noDataThreshold: -99998,
     timeControls: { historyDays: 17, forecastDays: 8, animationIntervalMs: 2500, ranges: [30, 90, 180, 365] }
   };
+  const EARLIEST_DATE = "2019-01-01";
+  const clampToEarliest = iso => iso && iso < EARLIEST_DATE ? EARLIEST_DATE : iso;
   const isoFromDate = d => {
     const yyyy = d.getFullYear();
     const mm = String(d.getMonth() + 1).padStart(2, "0");
@@ -264,13 +266,15 @@
       render();
     };
     const render = () => {
+      start = clampToEarliest(start);
+      end = clampToEarliest(end);
       if (new Date(start) > new Date(end)) [start, end] = [end, start];
       const rows = metRowsForRange(sourceRows, start, end);
       container.innerHTML = `
         <div class="met-popup-title">${station.label}</div>
         <div class="met-popup-controls">
-          <label>Start <input type="date" data-role="start" value="${start}"></label>
-          <label>End <input type="date" data-role="end" value="${end}"></label>
+          <label>Start <input type="date" data-role="start" value="${start}" min="${EARLIEST_DATE}"></label>
+          <label>End <input type="date" data-role="end" value="${end}" min="${EARLIEST_DATE}"></label>
           <div class="met-popup-ranges">
             ${[30, 90, 180, 365].map(days => `<button type="button" data-range="${days}" class="${rangeDays === days ? "active" : ""}">${metRangeLabels[days]}</button>`).join("")}
           </div>
@@ -567,6 +571,18 @@
           staticLayersRef.current.push(l);
         });
       }
+      if (!basinId && !passive && showRivers) {
+        basins.forEach(b => {
+          fetch(dataUrl(`/watersheds/${b.id}.geojson`)).then(r => r.ok ? r.json() : null).then(g => {
+            if (cancelled || !g) return;
+            const l = L.geoJSON(g, {
+              interactive: false,
+              style: { color: "#ffffff", weight: 1, opacity: 0.85, fillOpacity: 0 }
+            }).addTo(map);
+            staticLayersRef.current.push(l);
+          }).catch(() => {});
+        });
+      }
       if (showRivers) {
         fetch(dataUrl("/geojson/rivers.geojson")).then(r => r.json()).then(g => {
           if (cancelled) return;
@@ -822,7 +838,7 @@
       ),
       e("aside", { className: "panel date-column" },
         e("div", { className: "date-control-row" },
-          e("input", { type: "date", value: start, onChange: ev => { setStart(ev.target.value); setDate(ev.target.value); } }),
+          e("input", { type: "date", value: start, min: EARLIEST_DATE, onChange: ev => { if (!ev.target.value) return; const next = clampToEarliest(ev.target.value); setStart(next); setDate(next); } }),
           e("div", { className: "reset-animate-row" },
             e("button", { onClick: reset }, "Reset"),
             e("label", { className: "switch-label", title: "Animate dates" },
@@ -1042,10 +1058,10 @@
     const [showLegend, setShowLegend] = useState(true);
     const [varASource, setVarASource] = useState("hops");
     const [varBSource, setVarBSource] = useState("hops");
-    const [varA, setVarA] = useState(defaultVariable(config, "hops", "mean_runoff", { basinTimeseries: true }));
-    const [varB, setVarB] = useState(defaultVariable(config, "hops", "mean_swe", { basinTimeseries: true }));
+    const [varA, setVarA] = useState(defaultVariable(config,     "hops", "mean_lz_volume", { basinTimeseries: true }));
+        const [varB, setVarB] = useState(defaultVariable(config, "hops", "mean_uz_volume", { basinTimeseries: true }));
     const [varAKind, setVarAKind] = useState("line");
-    const [varBKind, setVarBKind] = useState("line");
+        const [varBKind, setVarBKind] = useState("bar");
     const [topPlotMode, setTopPlotMode] = useState(plotDefaults.topMode || "basin");
     const [bottomPlotMode, setBottomPlotMode] = useState(plotDefaults.bottomMode || "streamflow");
     const [bottomVarASource, setBottomVarASource] = useState("hops");
@@ -1069,7 +1085,7 @@
     useEffect(() => {
       fetch(apiUrl(`/api/timeseries/${basin.id}`))
         .then(r => r.json())
-        .then(d => setRows(Array.isArray(d.rows) ? d.rows : []))
+        .then(d => setRows(Array.isArray(d.rows) ? d.rows.filter(r => r.date >= EARLIEST_DATE) : []))
         .catch(() => setRows([]));
     }, [basin.id]);
     const availableYears = useMemo(() => {
