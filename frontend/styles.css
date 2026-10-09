@@ -253,7 +253,7 @@ label {
 }
 .control-row { display: flex; flex-wrap: wrap; gap: 5px; align-items: center; }
 .source-select {
-  width: 64px;
+  width: 86px;
   flex: 0 0 auto;
 }
 .segmented-toggle {
