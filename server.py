@@ -236,6 +236,11 @@ class HopsHandler(SimpleHTTPRequestHandler):
                 rows = read_basin_rows(basin, config)
                 return json_response(self, {"basin": basin, "rows": rows})
 
+            if path.startswith("/api/streamflow/"):
+                basin = path.rsplit("/", 1)[-1]
+                rows = read_streamflow_rows(basin, read_app_config())
+                return json_response(self, {"basin": basin, "rows": rows})
+
             if path.startswith("/api/met-observations/"):
                 station = path.rsplit("/", 1)[-1]
                 file_path = DATA_DIR / "metobs" / f"{quote(station, safe='')}.csv"

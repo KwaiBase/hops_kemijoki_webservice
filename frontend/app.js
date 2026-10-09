@@ -187,14 +187,40 @@
     return useMemo(() => Array.from({ length: timeControls.historyDays + timeControls.forecastDays + 1 }, (_, i) => addDays(start, i)), [start, timeControls.historyDays, timeControls.forecastDays]);
   }
 
-  // Small deterministic placeholder trend used for dummy forecast point markers.
-  function hashText(value) {
-    return String(value).split("").reduce((acc, ch) => acc + ch.charCodeAt(0), 0);
+  const addDaysISO = (iso, delta) => {
+    const d = new Date(`${iso}T00:00:00Z`);
+    d.setUTCDate(d.getUTCDate() + delta);
+    return d.toISOString().slice(0, 10);
+  };
+
+  // Streamflow trend over the last `days` days ending at `date`: observations are used for days
+  // before today; from today onwards observations are used where available, otherwise the
+  // configured model. Returns "up", "down", "flat" or null (not enough data).
+  function streamflowTrend(rows, date, today, model, days, noDataThreshold) {
+    if (!rows?.length) return null;
+    const byDate = new Map(rows.map(r => [r.date, r]));
+    const points = [];
+    for (let i = 0; i < days; i++) {
+      const day = addDaysISO(date, i - (days - 1));
+      const row = byDate.get(day);
+      if (!row) continue;
+      let value = plotValue(row.observations, noDataThreshold);
+      if (!Number.isFinite(value) && day >= today) value = plotValue(row[model], noDataThreshold);
+      if (Number.isFinite(value)) points.push([i, value]);
+    }
+    if (points.length < 2) return null;
+    const n = points.length;
+    const meanX = points.reduce((s, p) => s + p[0], 0) / n;
+    const meanY = points.reduce((s, p) => s + p[1], 0) / n;
+    const slope = points.reduce((s, p) => s + (p[0] - meanX) * (p[1] - meanY), 0)
+      / points.reduce((s, p) => s + (p[0] - meanX) ** 2, 0);
+    return slope > 0 ? "up" : slope < 0 ? "down" : "flat";
   }
 
-  function forecastTrend(basinId, date) {
-    return ((hashText(basinId) + new Date(date + "T00:00:00").getDate()) % 2) === 0 ? "up" : "down";
-  }
+  const TREND_SYMBOL = { up: "▲", down: "▼", flat: "►" };
+  const TREND_TEXT = { up: "rising", down: "falling", flat: "steady" };
+  const trendIconHtml = trend => `<div class="forecast-marker ${trend || "none"}"><span class="trend-arrow">${TREND_SYMBOL[trend] || "–"}</span></div>`;
+  const trendTooltip = (label, trend) => `${label} streamflow ${TREND_TEXT[trend] || "trend unavailable"}`;
 
   function metObservationSource(station) {
     return String(station.dataFile || `${station.id}.csv`).replace(/\.csv$/i, "");
@@ -400,6 +426,12 @@
     const syncing = useRef(false);
     const basinFitPadding = [18, 18];
     const [metRowsByStation, setMetRowsByStation] = useState({});
+    const [flowRowsByBasin, setFlowRowsByBasin] = useState({});
+    const trendOptions = config.displayOptions?.streamflowTrend || {};
+    const trendModel = trendOptions.model || "hops";
+    const trendDays = Math.max(2, Number(trendOptions.days) || 5);
+    const trendThreshold = config.displayOptions?.noDataThreshold ?? defaultDisplayOptions.noDataThreshold;
+    const trendOf = id => streamflowTrend(flowRowsByBasin[String(id)], date, todayISO(), trendModel, trendDays, trendThreshold);
     const [rasterLoading, setRasterLoading] = useState({ active: false, loaded: 0, total: 0 });
     const mapOptions = config.displayOptions?.map || {};
 
@@ -488,6 +520,19 @@
       map.on("moveend zoomend", sync);
       return () => map.off("moveend zoomend", sync);
     }, [masterRef, slaveRef]);
+
+    // Streamflow rows for the trend arrows are fetched once per basin when forecast markers are shown.
+    useEffect(() => {
+      if (basinId || !showPoints) return;
+      let cancelled = false;
+      (basins || []).forEach(b => {
+        fetch(apiUrl(`/api/streamflow/${encodeURIComponent(b.id)}`))
+          .then(r => r.ok ? r.json() : { rows: [] })
+          .then(d => { if (!cancelled) setFlowRowsByBasin(prev => ({ ...prev, [String(b.id)]: d.rows || [] })); })
+          .catch(() => {});
+      });
+      return () => { cancelled = true; };
+    }, [basinId, showPoints, basins]);
 
     // Observation rows are fetched lazily only when station markers are enabled for a map.
     useEffect(() => {
@@ -703,32 +748,32 @@
               const id = props.ID || props.id || props.Name || props.name || "forecast-point";
               const label = props.Name || props.name || props.ID || "Forecast point";
               const [lon, lat] = geometry.coordinates;
-              const trend = forecastTrend(id, date);
+              const trend = trendOf(id);
               const marker = L.marker([lat, lon], {
                 icon: L.divIcon({
-                  html: `<div class="forecast-marker ${trend}"><span class="trend-arrow">${trend === "up" ? "▲" : "▼"}</span></div>`,
+                  html: trendIconHtml(trend),
                   className: "",
                   iconSize: [22, 22],
                   iconAnchor: [11, 11]
                 })
               }).addTo(map);
-              marker.bindTooltip(`${label} streamflow ${trend === "up" ? "rising" : "falling"}`);
+              marker.bindTooltip(trendTooltip(label, trend));
               marker.on("click", () => onBasin && onBasin(String(id)));
               layersRef.current.push(marker);
             });
           });
         } else {
           basins.forEach(b => {
-            const trend = forecastTrend(b.id, date);
+            const trend = trendOf(b.id);
             const marker = L.marker([b.lat, b.lon], {
               icon: L.divIcon({
-                html: `<div class="forecast-marker ${trend}"><span class="trend-arrow">${trend === "up" ? "▲" : "▼"}</span></div>`,
+                html: trendIconHtml(trend),
                 className: "",
                 iconSize: [22, 22],
                 iconAnchor: [11, 11]
               })
             }).addTo(map);
-            marker.bindTooltip(`${b.label} streamflow ${trend === "up" ? "rising" : "falling"}`);
+            marker.bindTooltip(trendTooltip(b.label, trend));
             marker.on("click", () => onBasin && onBasin(b.id));
             layersRef.current.push(marker);
           });
@@ -755,7 +800,7 @@
         });
       }
       return () => { cancelled = true; fadeTimeouts.forEach(clearTimeout); };
-    }, [date, variable, mode, showRivers, showPoints, showObs, showMask, obsType, basinId, obsStations, metRowsByStation, preloadDates]);
+    }, [date, variable, mode, showRivers, showPoints, showObs, showMask, obsType, basinId, obsStations, metRowsByStation, flowRowsByBasin, preloadDates]);
 
     const loadingPercent = rasterLoading.total ? Math.round((rasterLoading.loaded / rasterLoading.total) * 100) : 0;
     const legend = legendFor(config, variable);

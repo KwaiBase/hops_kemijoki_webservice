@@ -903,6 +903,10 @@ label {
 .forecast-marker.down .trend-arrow {
   color: #ff8f8f;
 }
+.forecast-marker.flat .trend-arrow,
+.forecast-marker.none .trend-arrow {
+  color: #c4ccd4;
+}
 .met-marker {
   display: inline-flex;
   align-items: center;

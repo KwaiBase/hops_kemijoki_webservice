@@ -205,6 +205,16 @@ Map and basin selectors are controlled by `map-options.json`, expected in OpenSh
 
 For basin variables, a CSV column is considered usable when at least one value is greater than the configured `noDataThreshold` (default `-99998`). Missing columns and columns containing only values at or below that threshold are disabled and visually muted in the selectors. The same rule applies to streamflow model toggles. Individual values at or below the threshold, as well as blank cells, are treated as missing in plots: lines break at those dates, bars/markers are omitted, and streamflow skill metrics exclude pairs where either value is missing. Use a value such as `-99999` for missing data; do not leave cells blank.
 
+### Streamflow trend arrows
+
+The rising/falling arrows on the main map are computed from streamflow data in `/mnt/hops/data/basins/streamflow/`. For each forecast point (point ID = basin ID), the app fits a line through the last `days` days ending at the selected date; a positive slope shows ▲, a negative slope ▼, and a flat or too-short series shows a neutral marker. Days before today use only `<basin>_obs.csv`. From today onwards a day uses the observation if one exists, otherwise the configured model from `<basin>_<model>.csv` (underscores in the model ID become hyphens in the file name). Configure it in `display-options.json`:
+
+```json
+"streamflowTrend": { "model": "hops", "days": 5 }
+```
+
+If omitted, the defaults are `hops` and 5 days. Changing `model` (for example to `hops_xgb`) needs no rebuild or rollout. The model ID must also exist in the `models` list.
+
 ### General display options
 
 The external `/mnt/hops/config/display-options.json` file can also control model labels/colors/default selections, the basin list and outlet coordinates, map default variables and mask opacity, observation defaults, history/forecast lengths, animation speed, graph ranges, plot defaults, and the no-data threshold. Edit the mounted file and refresh the application; no image rebuild or rollout is required.
