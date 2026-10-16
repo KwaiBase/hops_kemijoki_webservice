@@ -130,6 +130,7 @@ running data-dependent views locally.
 - Add streamflow observation data in `data/basins/streamflow/{basin}_obs.csv`; use `flag` value `1` for unreliable observations
 - Add streamflow model data in `data/basins/streamflow/{basin}_{model}.csv`
 - Add basins in `config/app.json`; add basin GeoJSON and timeseries file using the basin id
+- Set the Obs/Sim label position per station with the optional `"labelPosition"` field (`"top"`, `"right"`, `"bottom"` or `"left"`, default `"right"`) in `observation-stations.json`
 - Add meteorological observation stations in `config/observation-stations.json`; add station CSV files in `data/metobs/fmi_tempc_{station_id}.csv` or `data/metobs/fmi_precip_{station_id}.csv`
 - Configure main-map variables and basin-plot variables in `config/map-options.json`; in OpenShift use the mounted `/mnt/hops/config/map-options.json`
 - Configure display defaults, basin metadata, models, map opacity, time controls, and the no-data threshold in `config/display-options.json`; in OpenShift use `/mnt/hops/config/display-options.json`

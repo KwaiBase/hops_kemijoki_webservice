@@ -5,7 +5,8 @@
     "lat": 66.56,
     "lon": 25.83,
     "type": "temperature",
-    "dataFile": "fmi_tempc_999999.csv"
+    "dataFile": "fmi_tempc_999999.csv",
+    "labelPosition": "right"
   },
   {
     "id": "sodankyla_met",

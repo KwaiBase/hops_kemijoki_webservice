@@ -812,12 +812,14 @@
           const row = metRowForDate(rows, date);
           const observed = formatMetValue(row?.observed, station);
           const simulated = formatMetValue(row?.simulated, station);
+          const requestedPos = String(station.labelPosition || "right").toLowerCase();
+          const labelPos = ["top", "right", "bottom", "left"].includes(requestedPos) ? requestedPos : "right";
           const marker = L.marker([station.lat, station.lon], {
             icon: L.divIcon({
-              html: `<div class="met-marker" style="--met-color:${color}"><span class="met-dot"></span><span class="met-values"><span class="met-value"><b>Obs</b> ${observed}</span><span class="met-value simulated"><b>Sim</b> ${simulated}</span></span></div>`,
+              html: `<div class="met-marker pos-${labelPos}" style="--met-color:${color}"><span class="met-dot"></span><span class="met-values"><span class="met-value"><b>Obs</b> ${observed}</span><span class="met-value simulated"><b>Sim</b> ${simulated}</span></span></div>`,
               className: "",
-              iconSize: [76, 32],
-              iconAnchor: [8, 16]
+              iconSize: [0, 0],
+              iconAnchor: [0, 0]
             })
           }).addTo(map);
           marker.bindTooltip(`${station.label}: Observed ${observed}, Simulated ${simulated}`);
