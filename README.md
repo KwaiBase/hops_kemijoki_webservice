@@ -135,6 +135,7 @@ running data-dependent views locally.
 - Configure main-map variables and basin-plot variables in `config/map-options.json`; in OpenShift use the mounted `/mnt/hops/config/map-options.json`
 - Configure display defaults, basin metadata, models, map opacity, time controls, and the no-data threshold in `config/display-options.json`; in OpenShift use `/mnt/hops/config/display-options.json`
 - Switch data on or off in `display-options.json` without rebuilding. A model gets `"enabled": false` in the `models` list. Variables use `"enabledVariables": {"open_runoff": false}`, whole groups use `"enabledGroups": {"Bog": false}`, and sources use `"enabledSources": {"ecmwf": false, "hsaf": false, "clms": false}`. Anything not listed stays enabled; disabled items disappear from all selectors and checkboxes, and a source with no enabled variables is hidden from the source dropdowns
+- Set the legend box width in pixels with `legendWidth` in `display-options.json` (default 150); a single legend can override it with `"width"` inside its `legends` entry
 - Configure map legends in the `legends` object of `config/display-options.json`; each map has an independent Legend visibility toggle
 - Edit CMS pages and place figures under `/mnt/hops/content/pages/` in OpenShift; the app falls back to the bundled `content/pages/` files when an external page is absent
 - Edit CMS text in `content/pages/*.md`

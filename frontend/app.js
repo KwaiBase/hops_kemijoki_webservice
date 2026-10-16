@@ -46,6 +46,7 @@
       unit: custom.unit || definition.unit || "",
       min: custom.min,
       max: custom.max,
+      width: custom.width,
       stops: custom.stops?.length ? custom.stops : [
         { label: "Low", color: definition.palette || "#4f9f75" },
         { label: "High", color: "#f4fbff" }
@@ -836,9 +837,11 @@
 
     const loadingPercent = rasterLoading.total ? Math.round((rasterLoading.loaded / rasterLoading.total) * 100) : 0;
     const legend = legendFor(config, variable);
+    const legendWidth = Number(legend.width ?? config.displayOptions?.legendWidth);
+    const legendStyle = Number.isFinite(legendWidth) && legendWidth > 0 ? { width: `min(${legendWidth}px, calc(100% - 20px))` } : undefined;
     return e("div", { id, ref: divRef, className: "map" + (basinId ? " basin-map" : "") },
-      showLegend && e("div", { className: "map-legend", role: "group", "aria-label": `${legend.title} legend` },
-        e("div", { className: "map-legend-title" }, legend.title),
+      showLegend && e("div", { className: "map-legend", style: legendStyle, role: "group", "aria-label": `${legend.title} legend` },
+              e("div", { className: "map-legend-title" }, legend.title),
         legend.unit && e("div", { className: "map-legend-unit" }, legend.unit),
         e("div", { className: "map-legend-scale" }, legend.stops.map((stop, index) =>
           e("div", { className: "map-legend-stop", key: `${stop.label}-${index}` },

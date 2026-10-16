@@ -1,12 +1,62 @@
 {
   "noDataThreshold": -99998,
   "models": [
-    {"id": "hops", "label": "HOPS", "color": "#66d9ef", "defaultSelected": true},
-    {"id": "hops_xgb", "label": "HOPS-XGB", "color": "#f8d56b", "defaultSelected": true},
-    {"id": "lstm", "label": "LSTM", "color": "#b48cff", "defaultSelected": false},
-    {"id": "gru", "label": "GRU", "color": "#ff8fb1", "defaultSelected": false},
-    {"id": "lisflood", "label": "LISFLOOD", "color": "#81d66b", "defaultSelected": false}
+    {"id": "hops", "label": "HOPS", "color": "#66d9ef", "defaultSelected": true, "enabled": true},
+    {"id": "hops_xgb", "label": "HOPS-XGB", "color": "#f8d56b", "defaultSelected": true, "enabled": true},
+    {"id": "lstm", "label": "LSTM", "color": "#b48cff", "defaultSelected": false, "enabled": true},
+    {"id": "gru", "label": "GRU", "color": "#ff8fb1", "defaultSelected": false, "enabled": true},
+    {"id": "lisflood", "label": "LISFLOOD", "color": "#81d66b", "defaultSelected": false, "enabled": true}
   ],
+  "enabledSources": {
+    "hops": true,
+    "ecmwf": true,
+    "hsaf": true,
+    "clms": true
+  },
+  "enabledGroups": {
+    "Mean": true,
+    "Open": true,
+    "Forest": true,
+    "Bog": true,
+    "ECMWF": true,
+    "HSAF": true,
+    "CLMS": true
+  },
+  "enabledVariables": {
+    "soil_state": true,
+    "mean_thaw_depth": true,
+    "mean_frost_depth": true,
+    "mean_snow_depth": true,
+    "mean_swe": true,
+    "mean_lz_volume": true,
+    "mean_uz_volume": true,
+    "mean_runoff": true,
+    "open_thaw_depth": true,
+    "open_frost_depth": true,
+    "open_snow_depth": true,
+    "open_swe": true,
+    "open_lz_volume": true,
+    "open_uz_volume": true,
+    "open_runoff": true,
+    "forest_thaw_depth": true,
+    "forest_frost_depth": true,
+    "forest_snow_depth": true,
+    "forest_swe": true,
+    "forest_lz_volume": true,
+    "forest_uz_volume": true,
+    "forest_runoff": true,
+    "bog_thaw_depth": true,
+    "bog_frost_depth": true,
+    "bog_snow_depth": true,
+    "bog_swe": true,
+    "bog_sm_volume": true,
+    "bog_runoff": true,
+    "hres_24h_precip": true,
+    "hres_2m_air_temp": true,
+    "h13_swe": true,
+    "h65_swe": true,
+    "swe_5km": true
+  },
   "basins": [
     {"id": "6501700", "label": "Kemihaara", "lat": 67.19853341174975, "lon": 27.785512523108022, "areaKm2": 0, "extentLon": 0.55, "extentLat": 0.34},
     {"id": "6503720", "label": "Sinettajarvi", "lat": 66.617942146605742, "lon": 25.427099584942237, "areaKm2": 0, "extentLon": 0.55, "extentLat": 0.34},
@@ -25,6 +75,7 @@
     "basinMaskOpacity": 0.5,
     "variableMaskOpacity": 0.85
   },
+  "legendWidth": 150,
   "legends": {
     "soil_state": {
       "title": "Soil State",
