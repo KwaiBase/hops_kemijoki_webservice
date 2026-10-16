@@ -261,9 +261,22 @@
     const left = 34, right = 10, top = 14, bottom = 24;
     if (!rows.length) return `<div class="met-popup-empty">No data for selected range</div>`;
     const values = rows.flatMap(r => [r.observed, r.simulated]).filter(Number.isFinite);
-    const min = Math.min(...values), max = Math.max(...values);
+    const isBar = station.type === "precipitation";
+    const min = isBar ? 0 : Math.min(...values);
+    const max = isBar ? Math.max(1, ...values) : Math.max(...values);
     const x = i => left + (i / Math.max(1, rows.length - 1)) * (w - left - right);
     const y = v => h - bottom - ((v - min) / Math.max(1, max - min)) * (h - top - bottom);
+    const bars = key => {
+      const slot = (w - left - right) / rows.length;
+      const bw = Math.max(1, slot * 0.4);
+      const offset = key === "observed" ? -bw : 0;
+      return rows.map((r, i) => {
+        if (!Number.isFinite(r[key])) return "";
+        const cx = left + slot * (i + 0.5) + offset;
+        return `<rect x="${cx}" y="${y(r[key])}" width="${bw}" height="${Math.max(0, y(0) - y(r[key]))}" class="${key === "observed" ? "obs-bar" : "sim-bar"}" />`;
+      }).join("");
+    };
+    const series = key => isBar ? bars(key) : segments(key);
     const segments = key => {
       const out = [];
       let cur = [];
@@ -286,9 +299,9 @@
           ${xTickIdxs.map(idx => `<line x1="${x(idx)}" y1="${top}" x2="${x(idx)}" y2="${h - bottom}" class="grid x-grid" />`).join("")}
           <line x1="${left}" y1="${h - bottom}" x2="${w - right}" y2="${h - bottom}" class="axis-line" />
           <line x1="${left}" y1="${top}" x2="${left}" y2="${h - bottom}" class="axis-line" />
-          ${segments("observed")}
-          ${segments("simulated")}
-          ${ticks.map(t => `<text x="${left - 6}" y="${y(t) + 3}" class="tick-label y-tick-label" text-anchor="end">${Math.round(t)} ${unit}</text>`).join("")}
+          ${series("observed")}
+          ${series("simulated")}
+          ${ticks.map(t => `<text x="${left - 6}" y="${y(t) + 3}" class="tick-label y-tick-label" text-anchor="end">${isBar ? t.toFixed(1) : Math.round(t)} ${unit}</text>`).join("")}
           ${xTickIdxs.map((idx, pos) => `<text x="${x(idx)}" y="${h - bottom + 13}" class="tick-label x-tick-label" text-anchor="${xAnchor(idx, pos)}">${rows[idx]?.date?.slice(5) || ""}</text>`).join("")}
         </svg>
       </div>

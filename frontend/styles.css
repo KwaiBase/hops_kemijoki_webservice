@@ -1141,6 +1141,8 @@ label {
   stroke-width: 2;
   vector-effect: non-scaling-stroke;
 }
+.met-popup-plot-svg .obs-bar { fill: #ffffff; }
+.met-popup-plot-svg .sim-bar { fill: #66d9ef; }
 
 /* Responsive fallbacks stack the dense map/basin layouts on narrower screens. */
 @media (max-width: 1100px) {
