@@ -241,12 +241,17 @@
   function metRowsForRange(rows, start, end) {
     return (rows || [])
       .filter(row => row.date >= start && row.date <= end)
-      .map(row => ({ date: row.date, observed: Number(row.observed), simulated: Number(row.simulated) }))
-      .filter(row => Number.isFinite(row.observed) && Number.isFinite(row.simulated));
+      .map(row => ({ date: row.date, observed: metNumber(row.observed), simulated: metNumber(row.simulated) }))
+      .filter(row => Number.isFinite(row.observed) || Number.isFinite(row.simulated));
+  }
+
+  function metNumber(value) {
+    const n = value === null || value === undefined || value === "" ? NaN : Number(value);
+    return Number.isFinite(n) && n > defaultDisplayOptions.noDataThreshold ? n : NaN;
   }
 
   function formatMetValue(value, station) {
-    const n = Number(value);
+    const n = metNumber(value);
     return Number.isFinite(n) ? `${n.toFixed(station.type === "precipitation" ? 1 : 1)} ${metObservationUnit(station)}` : "-";
   }
 
@@ -255,12 +260,20 @@
     const w = 330, h = 150;
     const left = 34, right = 10, top = 14, bottom = 24;
     if (!rows.length) return `<div class="met-popup-empty">No data for selected range</div>`;
-    const values = rows.flatMap(r => [r.observed, r.simulated]);
+    const values = rows.flatMap(r => [r.observed, r.simulated]).filter(Number.isFinite);
     const min = Math.min(...values), max = Math.max(...values);
     const x = i => left + (i / Math.max(1, rows.length - 1)) * (w - left - right);
     const y = v => h - bottom - ((v - min) / Math.max(1, max - min)) * (h - top - bottom);
-    const obsPts = rows.map((r, i) => `${x(i)},${y(r.observed)}`).join(" ");
-    const simPts = rows.map((r, i) => `${x(i)},${y(r.simulated)}`).join(" ");
+    const segments = key => {
+      const out = [];
+      let cur = [];
+      rows.forEach((r, i) => {
+        if (Number.isFinite(r[key])) cur.push(`${x(i)},${y(r[key])}`);
+        else if (cur.length) { out.push(cur); cur = []; }
+      });
+      if (cur.length) out.push(cur);
+      return out.map(pts => `<polyline points="${pts.join(" ")}" class="${key === "observed" ? "obs-line" : "sim-line"}" />`).join("");
+    };
     const ticks = Array.from({ length: 4 }, (_, i) => min + ((max - min) * i) / 3);
     const xTickCount = Math.min(6, rows.length);
     const xTickIdxs = Array.from({ length: xTickCount }, (_, i) => Math.round((i / Math.max(1, xTickCount - 1)) * (rows.length - 1)));
@@ -273,8 +286,8 @@
           ${xTickIdxs.map(idx => `<line x1="${x(idx)}" y1="${top}" x2="${x(idx)}" y2="${h - bottom}" class="grid x-grid" />`).join("")}
           <line x1="${left}" y1="${h - bottom}" x2="${w - right}" y2="${h - bottom}" class="axis-line" />
           <line x1="${left}" y1="${top}" x2="${left}" y2="${h - bottom}" class="axis-line" />
-          <polyline points="${obsPts}" class="obs-line" />
-          <polyline points="${simPts}" class="sim-line" />
+          ${segments("observed")}
+          ${segments("simulated")}
           ${ticks.map(t => `<text x="${left - 6}" y="${y(t) + 3}" class="tick-label y-tick-label" text-anchor="end">${Math.round(t)} ${unit}</text>`).join("")}
           ${xTickIdxs.map((idx, pos) => `<text x="${x(idx)}" y="${h - bottom + 13}" class="tick-label x-tick-label" text-anchor="${xAnchor(idx, pos)}">${rows[idx]?.date?.slice(5) || ""}</text>`).join("")}
         </svg>
