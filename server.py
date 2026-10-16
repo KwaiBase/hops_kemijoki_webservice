@@ -68,7 +68,26 @@ def read_app_config():
                 if not isinstance(display_options[key], list):
                     raise ValueError(f"displayOptions.{key} must be a JSON array")
                 config[key] = display_options[key]
+        apply_enable_flags(config, display_options)
     return config
+
+
+def apply_enable_flags(config, display_options):
+    """Drop models and variables switched off with `enabled: false` flags in display options."""
+    def flags(key):
+        value = display_options.get(key) or {}
+        if not isinstance(value, dict):
+            raise ValueError(f"displayOptions.{key} must be a JSON object")
+        return value
+
+    sources, groups, variables = flags("enabledSources"), flags("enabledGroups"), flags("enabledVariables")
+    config["models"] = [m for m in config.get("models", []) if m.get("enabled", True) is not False]
+    config["variables"] = [
+        v for v in config.get("variables", [])
+        if sources.get(v.get("source", "hops"), True) is not False
+        and groups.get(v.get("group"), True) is not False
+        and variables.get(v.get("id"), True) is not False
+    ]
 
 
 def json_response(handler: SimpleHTTPRequestHandler, payload, status=200):

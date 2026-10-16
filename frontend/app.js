@@ -36,6 +36,8 @@
     const vars = sourceVariables(config, source, options);
     return vars.some(v => v.id === fallbackId) ? fallbackId : (vars[0]?.id || config.variables[0]?.id);
   };
+  const defaultSource = (config, preferred) =>
+    sourceVariables(config, preferred).length ? preferred : (SOURCE_OPTIONS.find(s => sourceVariables(config, s.id).length)?.id || preferred);
   const legendFor = (config, variable) => {
     const definition = config.variables.find(v => v.id === variable) || {};
     const custom = config.displayOptions?.legends?.[variable] || {};
@@ -67,14 +69,16 @@
       )
     );
   };
-  const SourceSelect = ({ value, onChange, ariaLabel }) =>
+  // Sources without any enabled variable are hidden.
+  const activeSources = config => SOURCE_OPTIONS.filter(source => sourceVariables(config, source.id).length);
+  const SourceSelect = ({ config, value, onChange, ariaLabel }) =>
     e("select", { className: "source-select", value, onChange: ev => onChange(ev.target.value), "aria-label": ariaLabel },
-      SOURCE_OPTIONS.map(source => e("option", { key: source.id, value: source.id }, source.label))
+      activeSources(config).map(source => e("option", { key: source.id, value: source.id }, source.label))
     );
   const AllVariableSelect = ({ config, value, onChange, includeNone = false, noneLabel = "NONE" }) =>
     e("select", { className: "variable-select", value, onChange: ev => onChange(ev.target.value) },
       includeNone && e("option", { value: "none" }, noneLabel),
-      ...SOURCE_OPTIONS.map(source => e("optgroup", { key: source.id, label: source.label },
+      ...activeSources(config).map(source => e("optgroup", { key: source.id, label: source.label },
         sourceVariables(config, source.id).map(v => e("option", { key: v.id, value: v.id }, v.label))
       ))
   );
@@ -862,8 +866,8 @@
     const [start, setStart] = useState(addDays(todayISO(), -timeControls.historyDays));
     const dates = useDateSequence(start, config);
     const [date, setDate] = useState(todayISO());
-    const [sourceA, setSourceA] = useState(mapOptions.defaultSource || "hops");
-    const [sourceB, setSourceB] = useState(mapOptions.defaultSource || "hops");
+    const [sourceA, setSourceA] = useState(defaultSource(config, mapOptions.defaultSource || "hops"));
+    const [sourceB, setSourceB] = useState(defaultSource(config, mapOptions.defaultSource || "hops"));
     const [varA, setVarA] = useState(defaultVariable(config, sourceA, mapOptions.mainDefaultVariable || "mean_runoff"));
     const [varB, setVarB] = useState(defaultVariable(config, sourceB, mapOptions.comparisonDefaultVariable || "soil_state"));
     const [animate, setAnimate] = useState(false);
@@ -901,7 +905,7 @@
         e("section", { className: "panel map-panel" },
           e("div", { className: "panel-head panel-head-map-a" },
           e("div", { className: "control-row" },
-            e(SourceSelect, { value: sourceA, onChange: setMapSourceA, ariaLabel: "Map A data source" }),
+            e(SourceSelect, { config, value: sourceA, onChange: setMapSourceA, ariaLabel: "Map A data source" }),
             e(VariableSelect, { config, source: sourceA, value: varA, onChange: setVarA }),
             hasVariableMask(varA) && e("label", { className: "mask-toggle" }, e("input", { type: "checkbox", checked: maskA, onChange: ev => setMaskA(ev.target.checked) }), "Mask")
           ),
@@ -936,7 +940,7 @@
             )
           ),
           e("div", { className: "control-row" },
-            e(SourceSelect, { value: sourceB, onChange: setMapSourceB, ariaLabel: "Map B data source" }),
+            e(SourceSelect, { config, value: sourceB, onChange: setMapSourceB, ariaLabel: "Map B data source" }),
             e(VariableSelect, { config, source: sourceB, value: varB, onChange: setVarB }),
             hasVariableMask(varB) && e("label", { className: "mask-toggle" }, e("input", { type: "checkbox", checked: maskB, onChange: ev => setMaskB(ev.target.checked) }), "Mask"),
             e("label", null, e("input", { type: "checkbox", checked: showLegendB, onChange: ev => setShowLegendB(ev.target.checked) }), "Legend")
@@ -1128,22 +1132,23 @@
     const noDataThreshold = displayOptions.noDataThreshold ?? defaultDisplayOptions.noDataThreshold;
     const [rows, setRows] = useState([]);
     const [date, setDate] = useState(todayISO());
-    const [mapSource, setMapSource] = useState("hops");
-    const [mapVar, setMapVar] = useState(defaultVariable(config, mapOptions.defaultSource || "hops", mapOptions.basinDefaultVariable || "soil_state"));
+    const baseSource = defaultSource(config, mapOptions.defaultSource || "hops");
+    const [mapSource, setMapSource] = useState(baseSource);
+    const [mapVar, setMapVar] = useState(defaultVariable(config, baseSource, mapOptions.basinDefaultVariable || "soil_state"));
     const [mapMask, setMapMask] = useState(true);
     const [showLegend, setShowLegend] = useState(true);
-    const [varASource, setVarASource] = useState("hops");
-    const [varBSource, setVarBSource] = useState("hops");
-    const [varA, setVarA] = useState(defaultVariable(config,     "hops", "mean_lz_volume", { basinTimeseries: true }));
-        const [varB, setVarB] = useState(defaultVariable(config, "hops", "mean_uz_volume", { basinTimeseries: true }));
+    const [varASource, setVarASource] = useState(baseSource);
+    const [varBSource, setVarBSource] = useState(baseSource);
+    const [varA, setVarA] = useState(defaultVariable(config, baseSource, "mean_lz_volume", { basinTimeseries: true }));
+    const [varB, setVarB] = useState(defaultVariable(config, baseSource, "mean_uz_volume", { basinTimeseries: true }));
     const [varAKind, setVarAKind] = useState("line");
-        const [varBKind, setVarBKind] = useState("bar");
+    const [varBKind, setVarBKind] = useState("bar");
     const [topPlotMode, setTopPlotMode] = useState(plotDefaults.topMode || "basin");
     const [bottomPlotMode, setBottomPlotMode] = useState(plotDefaults.bottomMode || "streamflow");
-    const [bottomVarASource, setBottomVarASource] = useState("hops");
-    const [bottomVarBSource, setBottomVarBSource] = useState("hops");
-    const [bottomVarA, setBottomVarA] = useState(defaultVariable(config, "hops", "mean_swe", { basinTimeseries: true }));
-    const [bottomVarB, setBottomVarB] = useState(defaultVariable(config, "hops", "mean_runoff", { basinTimeseries: true }));
+    const [bottomVarASource, setBottomVarASource] = useState(baseSource);
+    const [bottomVarBSource, setBottomVarBSource] = useState(baseSource);
+    const [bottomVarA, setBottomVarA] = useState(defaultVariable(config, baseSource, "mean_swe", { basinTimeseries: true }));
+    const [bottomVarB, setBottomVarB] = useState(defaultVariable(config, baseSource, "mean_runoff", { basinTimeseries: true }));
     const [bottomVarAKind, setBottomVarAKind] = useState("line");
     const [bottomVarBKind, setBottomVarBKind] = useState("line");
     const [days, setDays] = useState(30);
@@ -1345,7 +1350,7 @@
                   topPlotMode === "streamflow" && e("strong", { className: "streamflow-unit" }, ["m", e("sup", { key: "unit" }, "3"), "/s"])
                 ),
                 topPlotMode === "basin" && e(React.Fragment, null,
-                e(SourceSelect, { value: varASource, onChange: setBasinSourceA, ariaLabel: "Basin variable A data source" }),
+                e(SourceSelect, { config, value: varASource, onChange: setBasinSourceA, ariaLabel: "Basin variable A data source" }),
                 e(VariableSelect, { config, source: varASource, value: varA, onChange: setVarA, includeNone: true, noneLabel: "A = NONE", basinTimeseries: true, disabledValues: new Set([...sourceVariables(config, varASource, { basinTimeseries: true })].filter(variable => !availableBasinVariables.has(variable.id)).map(variable => variable.id)) }),
                 varA !== "none" && e("select", { className: "plot-kind-select", value: varAKind, onChange: ev => setVarAKind(ev.target.value), title: "Variable A plot type" },
                   e("option", { value: "line" }, "Line"),
@@ -1371,7 +1376,7 @@
                   e("option", { value: "line" }, "Line"),
                   e("option", { value: "bar" }, "Bar")
                 ),
-                e(SourceSelect, { value: varBSource, onChange: setBasinSourceB, ariaLabel: "Basin variable B data source" }),
+                e(SourceSelect, { config, value: varBSource, onChange: setBasinSourceB, ariaLabel: "Basin variable B data source" }),
                 e(VariableSelect, { config, source: varBSource, value: varB, onChange: setVarB, includeNone: true, noneLabel: "B = NONE", basinTimeseries: true, disabledValues: new Set([...sourceVariables(config, varBSource, { basinTimeseries: true })].filter(variable => !availableBasinVariables.has(variable.id)).map(variable => variable.id)) })
                 )
               )
@@ -1401,7 +1406,7 @@
                   bottomPlotMode === "streamflow" && e("strong", { className: "streamflow-unit" }, ["m", e("sup", { key: "unit" }, "3"), "/s"])
                 ),
                 bottomPlotMode === "basin" && e(React.Fragment, null,
-                  e(SourceSelect, { value: bottomVarASource, onChange: setBottomBasinSourceA, ariaLabel: "Bottom basin variable A data source" }),
+                  e(SourceSelect, { config, value: bottomVarASource, onChange: setBottomBasinSourceA, ariaLabel: "Bottom basin variable A data source" }),
                   e(VariableSelect, { config, source: bottomVarASource, value: bottomVarA, onChange: setBottomVarA, includeNone: true, noneLabel: "A = NONE", basinTimeseries: true, disabledValues: new Set([...sourceVariables(config, bottomVarASource, { basinTimeseries: true })].filter(variable => !availableBasinVariables.has(variable.id)).map(variable => variable.id)) }),
                   bottomVarA !== "none" && e("select", { className: "plot-kind-select", value: bottomVarAKind, onChange: ev => setBottomVarAKind(ev.target.value), title: "Bottom variable A plot type" },
                     e("option", { value: "line" }, "Line"),
@@ -1425,7 +1430,7 @@
                   e("option", { value: "line" }, "Line"),
                   e("option", { value: "bar" }, "Bar")
                 ),
-                e(SourceSelect, { value: bottomVarBSource, onChange: setBottomBasinSourceB, ariaLabel: "Bottom basin variable B data source" }),
+                e(SourceSelect, { config, value: bottomVarBSource, onChange: setBottomBasinSourceB, ariaLabel: "Bottom basin variable B data source" }),
                 e(VariableSelect, { config, source: bottomVarBSource, value: bottomVarB, onChange: setBottomVarB, includeNone: true, noneLabel: "B = NONE", basinTimeseries: true, disabledValues: new Set([...sourceVariables(config, bottomVarBSource, { basinTimeseries: true })].filter(variable => !availableBasinVariables.has(variable.id)).map(variable => variable.id)) })
               )
             ),
@@ -1469,7 +1474,7 @@
           e("div", { className: "panel-head" },
             e("strong", null, `${basin.label || basin.name || basin.id} (${basin.id})`),
             e("div", { className: "control-row" },
-              e(SourceSelect, { value: mapSource, onChange: setBasinMapSource, ariaLabel: "Basin map data source" }),
+              e(SourceSelect, { config, value: mapSource, onChange: setBasinMapSource, ariaLabel: "Basin map data source" }),
               e(VariableSelect, { config, source: mapSource, value: mapVar, onChange: setMapVar }),
               hasVariableMask(mapVar) && e("label", { className: "mask-toggle" }, e("input", { type: "checkbox", checked: mapMask, onChange: ev => setMapMask(ev.target.checked) }), "Mask"),
               e("label", null, e("input", { type: "checkbox", checked: showLegend, onChange: ev => setShowLegend(ev.target.checked) }), "Legend")
