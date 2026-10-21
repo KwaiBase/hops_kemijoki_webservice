@@ -1002,17 +1002,17 @@
   }
 
   // SVG plot renderer used for basin averages and streamflow; supports dual axes, bars, markers, and drag zoom.
-  function Plot({ rows, series, selected, onPick, onRangeSelect, dualAxis = false, zeroBased = false, forecastBoundary, noDataThreshold }) {
+  function Plot({ rows, series, selected, onPick, onRangeSelect, dualAxis = false, zeroBased = false, extentRows, headroom = 0.1, forecastBoundary, noDataThreshold }) {
     const w = 900, h = 220;
     const padLeft = 44, padRight = dualAxis ? 48 : 18, padTop = 22, padBottom = 30;
     const leftSeries = series.filter(s => (s.axis || "left") === "left");
     const rightSeries = series.filter(s => s.axis === "right");
     const axisExtent = axisSeries => {
-      const values = rows.flatMap(r => axisSeries.map(s => plotValue(r[s.id], noDataThreshold)).filter(Number.isFinite));
+      const values = (zeroBased && extentRows ? extentRows : rows).flatMap(r => axisSeries.map(s => plotValue(r[s.id], noDataThreshold)).filter(Number.isFinite));
       if (!values.length) return { min: 0, max: 1 };
       const min = Math.min(...values), max = Math.max(...values);
-      // Zero-based axes run from 0 to the visible period's maximum plus 20% headroom.
-      if (zeroBased) return { min: 0, max: Math.max(1, max * 1.2) };
+      // Zero-based axes run from 0 to the maximum of `extentRows` (the whole selected year) plus headroom.
+      if (zeroBased) return { min: 0, max: Math.max(1, max * (1 + headroom)) };
       return min === max ? { min: min - 1, max: max + 1 } : { min, max };
     };
     const leftExtent = axisExtent(leftSeries.length ? leftSeries : series);
@@ -1219,6 +1219,9 @@
       return baseVisible.filter(r => r.date >= zoomRange.start && r.date <= zoomRange.end);
     }, [baseVisible, zoomRange]);
     const visibleDates = useMemo(() => visible.map(row => row.date), [visible]);
+    const yearRows = useMemo(() => rows.filter(r => Number(r.date.slice(0, 4)) === selectedYear), [rows, selectedYear]);
+    const streamHeadroom = Number.isFinite(Number(plotDefaults.streamflowHeadroom)) && plotDefaults.streamflowHeadroom !== null && plotDefaults.streamflowHeadroom !== ""
+      ? Math.max(0, Number(plotDefaults.streamflowHeadroom)) : 0.1;
     const availableBasinVariables = useMemo(() => new Set(
       sourceVariables(config, "hops", { basinTimeseries: true })
         .concat(SOURCE_OPTIONS.slice(1).flatMap(source => sourceVariables(config, source.id, { basinTimeseries: true })))
@@ -1405,7 +1408,7 @@
             topPlotEmpty
               ? e("div", { className: "plot-empty" }, "No data available")
               : visible.length > 0 && (topPlotMode === "streamflow"
-                ? e(Plot, { rows: visible, series: topStreamSeries, selected: date, onPick: setDate, onRangeSelect: zoomTimeRange, zeroBased: true, forecastBoundary: todayISO(), noDataThreshold })
+                ? e(Plot, { rows: visible, series: topStreamSeries, selected: date, onPick: setDate, onRangeSelect: zoomTimeRange, zeroBased: true, extentRows: yearRows, headroom: streamHeadroom, forecastBoundary: todayISO(), noDataThreshold })
                 : topPlotMode === "basin" && variableSeries.length > 0 && e(Plot, { rows: visible, series: variableSeries, selected: date, onPick: setDate, onRangeSelect: zoomTimeRange, dualAxis: true, forecastBoundary: todayISO(), noDataThreshold })),
             topPlotMode === "streamflow" && topStreamStats
           ),
@@ -1458,7 +1461,7 @@
             bottomPlotEmpty
               ? e("div", { className: "plot-empty" }, "No data available")
               : visible.length > 0 && (bottomPlotMode === "streamflow"
-                ? e(Plot, { rows: visible, series: bottomStreamSeries, selected: date, onPick: setDate, onRangeSelect: zoomTimeRange, zeroBased: true, forecastBoundary: todayISO(), noDataThreshold })
+                ? e(Plot, { rows: visible, series: bottomStreamSeries, selected: date, onPick: setDate, onRangeSelect: zoomTimeRange, zeroBased: true, extentRows: yearRows, headroom: streamHeadroom, forecastBoundary: todayISO(), noDataThreshold })
                 : bottomPlotMode === "basin" && bottomVariableSeries.length > 0 && e(Plot, { rows: visible, series: bottomVariableSeries, selected: date, onPick: setDate, onRangeSelect: zoomTimeRange, dualAxis: true, forecastBoundary: todayISO(), noDataThreshold })),
             bottomPlotMode === "streamflow" && bottomStreamStats
           )

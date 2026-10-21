@@ -185,6 +185,7 @@
     "bottomShowObservations": true,
     "bottomShowStats": true,
     "days": 30,
+    "streamflowHeadroom": 0.1,
     "topPlotPercent": 52
   }
 }
