@@ -136,9 +136,33 @@ running data-dependent views locally.
 - Configure display defaults, basin metadata, models, map opacity, time controls, and the no-data threshold in `config/display-options.json`; in OpenShift use `/mnt/hops/config/display-options.json`
 - Switch data on or off in `display-options.json` without rebuilding. A model gets `"enabled": false` in the `models` list. Variables use `"enabledVariables": {"open_runoff": false}`, whole groups use `"enabledGroups": {"Bog": false}`, and sources use `"enabledSources": {"ecmwf": false, "hsaf": false, "clms": false}`. Anything not listed stays enabled; disabled items disappear from all selectors and checkboxes, and a source with no enabled variables is hidden from the source dropdowns
 - Override variable colors (basin plot lines/bars/labels) with `variableColors` in `display-options.json`, e.g. `"variableColors": {"bog_swe": "#ffb454"}`; unlisted variables keep the `palette` from `config/app.json`
-- Set every default map and plot from `display-options.json` (sources are picked automatically from the variable ID; `"none"` is allowed for plot variables). Maps, under `map`: `mainDefaultVariable`, `comparisonDefaultVariable`, `basinDefaultVariable`, `showRivers`, `showLegendA`/`showLegendB`, `maskA`/`maskB`, `basinMapMask`, `basinShowLegend`, `river` (`color`, `weight`, `opacity` of the river lines). Basin plots, under `plotDefaults`: `topMode`/`bottomMode` (`basin`, `streamflow`, `none`), `topVariableA/B`, `topKindA/B`, `bottomVariableA/B`, `bottomKindA/B` (`line` or `bar`), `topModels`/`bottomModels`, `topShowObservations`/`bottomShowObservations`, `topShowStats`/`bottomShowStats`, `days` (one of `timeControls.ranges`), `streamflowHeadroom` (streamflow y-axis runs from 0 to the selected year's maximum x (1 + headroom); default 0.1), `topPlotPercent`
+- Set every default map and plot from `display-options.json` (sources are picked automatically from the variable ID; `"none"` is allowed for plot variables). Maps, under `map`: `mainDefaultVariable`, `comparisonDefaultVariable`, `basinDefaultVariable`, `showRivers`, `showLegendA`/`showLegendB`, `maskA`/`maskB`, `basinMapMask`, `basinShowLegend`, `river` (`color`, `weight`, `opacity` of the river lines). Basin plots, under `plotDefaults`: `topMode`/`bottomMode` (`basin`, `streamflow`, `none`), `topVariableA/B`, `topKindA/B`, `bottomVariableA/B`, `bottomKindA/B` (`line` or `bar`), `topModels`/`bottomModels`, `topShowObservations`/`bottomShowObservations`, `topShowStats`/`bottomShowStats`, `days` (one of `timeControls.ranges`), `topPlotPercent`. Y-axis scaling is configured under `plotScaling` (see "Plot y-axis scaling" below)
 - Set default basin-plot variables with `plotDefaults.topVariableA`/`topVariableB` and plot types with `topKindA`/`topKindB` (`line` or `bar`); the main-map right-hand default is `map.comparisonDefaultVariable` (its source is picked automatically)
 - Set the legend box width in pixels with `legendWidth` in `display-options.json` (default 150); a single legend can override it with `"width"` inside its `legends` entry
 - Configure map legends in the `legends` object of `config/display-options.json`; each map has an independent Legend visibility toggle
 - Edit CMS pages and place figures under `/mnt/hops/content/pages/` in OpenShift; the app falls back to the bundled `content/pages/` files when an external page is absent
 - Edit CMS text in `content/pages/*.md`
+
+## Plot y-axis scaling
+
+Basin view plots (basin averages and streamflow) share one scaling scheme, implemented in the `Plot` component in `frontend/app.js` and configured under `plotScaling` in `display-options.json` (mounted in OpenShift, so changes need no rebuild):
+
+```json
+"plotScaling": {
+  "headroom": 0.1,
+  "temperatureHeadspace": 0.5,
+  "temperatureVariables": ["hres_2m_air_temp"]
+}
+```
+
+- **Yearly scale.** The axis range comes from all rows of the *selected year* (including forecast rows), not from the visible period. The scale therefore stays the same when switching 1M/3M/6M/1Y or drag-zooming, and periods stay comparable.
+- **Normal variables** (streamflow, runoff, precipitation, SWE, volumes, ...): the axis runs from 0 to the year's maximum x (1 + `headroom`). Each axis (left/right) is scaled separately from the series on it.
+- **Signed variables** (air temperature): the axis runs from the year's minimum minus `temperatureHeadspace` to the year's maximum plus `temperatureHeadspace`. `temperatureHeadspace` is in data units (degrees), not a percentage.
+  - A faint dashed zero line is drawn on the axis when 0 is inside the range.
+  - Bars start at the zero line and go up or down from it, instead of starting at the bottom of the plot.
+- **A variable counts as signed only if its ID is in `temperatureVariables`** (default `["hres_2m_air_temp"]`). When adding a new variable that can be negative (for example another temperature, or an anomaly), add its ID to that list. Otherwise it is scaled from 0 and negative values are cut off.
+- Normal axes never go below 0 unless the data does; a series with no positive values gets an axis of 0 to 1.
+- If a plot has the signed variable on one axis and a normal variable on the other, each axis uses its own rule. The zero line is drawn for the signed axis only.
+- Missing or invalid `plotScaling` values fall back to the defaults above. The older `plotDefaults.streamflowHeadroom` key is still read as a fallback for `headroom`.
+
+When adding new data: new basin-average columns are scaled automatically with the yearly rule. Only variables that need a signed axis have to be listed in `temperatureVariables`.

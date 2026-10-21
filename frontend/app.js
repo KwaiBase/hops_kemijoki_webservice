@@ -1002,17 +1002,23 @@
   }
 
   // SVG plot renderer used for basin averages and streamflow; supports dual axes, bars, markers, and drag zoom.
-  function Plot({ rows, series, selected, onPick, onRangeSelect, dualAxis = false, zeroBased = false, extentRows, headroom = 0.1, forecastBoundary, noDataThreshold }) {
+  // Y-axis scaling for basin plots (see "Plot y-axis scaling" in README.md).
+  // Normal axes run from 0 to the selected year's maximum x (1 + headroom).
+  // Signed axes (series flagged `signed`, e.g. air temperature) run from the year's min to max, padded by a fixed `signedHeadspace` in data units.
+  const numberOr = (value, fallback) => (value === null || value === undefined || value === "" || !Number.isFinite(Number(value))) ? fallback : Math.max(0, Number(value));
+  function Plot({ rows, series, selected, onPick, onRangeSelect, dualAxis = false, extentRows, headroom = 0.1, signedHeadspace = 0.5, forecastBoundary, noDataThreshold }) {
     const w = 900, h = 220;
     const padLeft = 44, padRight = dualAxis ? 48 : 18, padTop = 22, padBottom = 30;
     const leftSeries = series.filter(s => (s.axis || "left") === "left");
     const rightSeries = series.filter(s => s.axis === "right");
     const axisExtent = axisSeries => {
-      const values = (zeroBased && extentRows ? extentRows : rows).flatMap(r => axisSeries.map(s => plotValue(r[s.id], noDataThreshold)).filter(Number.isFinite));
+      const values = (extentRows || rows).flatMap(r => axisSeries.map(s => plotValue(r[s.id], noDataThreshold)).filter(Number.isFinite));
       if (!values.length) return { min: 0, max: 1 };
       const min = Math.min(...values), max = Math.max(...values);
-      // Zero-based axes run from 0 to the maximum of `extentRows` (the whole selected year) plus headroom.
-      if (zeroBased) return { min: 0, max: Math.max(1, max * (1 + headroom)) };
+      if (extentRows) {
+        if (axisSeries.some(s => s.signed)) return { min: min - signedHeadspace, max: max + signedHeadspace };
+        return { min: Math.min(0, min), max: max > 0 ? max * (1 + headroom) : 1 };
+      }
       return min === max ? { min: min - 1, max: max + 1 } : { min, max };
     };
     const leftExtent = axisExtent(leftSeries.length ? leftSeries : series);
@@ -1020,8 +1026,19 @@
     const barSeries = series.filter(s => s.kind === "bar");
     const barWidth = Math.max(2, Math.min(14, ((w - padLeft - padRight) / Math.max(1, rows.length)) * 0.58));
     const x = i => padLeft + (i / Math.max(1, rows.length - 1)) * (w - padLeft - padRight);
-    const yFor = (v, extent) => h - padBottom - ((v - extent.min) / Math.max(1, extent.max - extent.min)) * (h - padTop - padBottom);
+    const yFor = (v, extent) => h - padBottom - ((v - extent.min) / Math.max(1e-9, extent.max - extent.min)) * (h - padTop - padBottom);
     const y = (v, axis = "left") => yFor(v, axis === "right" ? rightExtent : leftExtent);
+    // Bars start at zero when the axis spans it, otherwise at the bottom of the plot.
+    const barBaseY = axis => {
+      const extent = axis === "right" ? rightExtent : leftExtent;
+      return extent.min <= 0 && extent.max >= 0 ? yFor(0, extent) : h - padBottom;
+    };
+    const zeroLines = [["left", leftExtent], ["right", rightExtent]].flatMap(([axis, extent]) => {
+      const hasSigned = series.some(s => s.signed && (s.axis || "left") === axis);
+      if (!hasSigned || extent.min > 0 || extent.max < 0) return [];
+      const zeroY = yFor(0, extent);
+      return [e("line", { key: `zero-line-${axis}`, x1: padLeft, y1: zeroY, x2: w - padRight, y2: zeroY, stroke: "#c9dbe6", strokeWidth: 1, strokeDasharray: "6 4", opacity: 0.55, vectorEffect: "non-scaling-stroke" })];
+    });
     const selectedIndex = Math.max(0, rows.findIndex(r => r.date === selected));
     const firstForecastIndex = forecastBoundary ? rows.findIndex(r => r.date >= forecastBoundary) : -1;
     const forecastShadeX = firstForecastIndex >= 0 ? x(firstForecastIndex) : null;
@@ -1104,9 +1121,10 @@
           const barCount = Math.max(1, barSeries.length);
           const left = x(i) - (barWidth * barCount) / 2 + si * barWidth;
           const valueY = y(value, s.axis);
-          const baseY = h - padBottom;
+          const baseY = barBaseY(s.axis);
           return e("rect", { key: `${s.axis || "left"}-${s.id}-${i}`, x: left, y: Math.min(valueY, baseY), width: barWidth - 1, height: Math.max(1, Math.abs(baseY - valueY)), fill: s.color, opacity: 0.46 });
         })),
+        ...zeroLines,
         ...series.filter(s => s.kind !== "bar" && s.kind !== "line-markers").flatMap(s => lineSegments(s).map((segment, i) => e("polyline", { key: `${s.axis || "left"}-${s.id}-${i}`, fill: "none", stroke: s.color, strokeWidth: 2, vectorEffect: "non-scaling-stroke", points: segment.join(" ") }))),
         ...series.filter(s => s.kind === "line-markers").flatMap(s => lineSegments(s).map((segment, i) => e("polyline", { key: `${s.axis || "left"}-${s.id}-line-${i}`, fill: "none", stroke: s.color, strokeWidth: 2, vectorEffect: "non-scaling-stroke", points: segment.join(" ") }))),
         ...series.filter(s => s.kind === "line-markers").flatMap(s => rows.flatMap((r, i) => {
@@ -1220,8 +1238,11 @@
     }, [baseVisible, zoomRange]);
     const visibleDates = useMemo(() => visible.map(row => row.date), [visible]);
     const yearRows = useMemo(() => rows.filter(r => Number(r.date.slice(0, 4)) === selectedYear), [rows, selectedYear]);
-    const streamHeadroom = Number.isFinite(Number(plotDefaults.streamflowHeadroom)) && plotDefaults.streamflowHeadroom !== null && plotDefaults.streamflowHeadroom !== ""
-      ? Math.max(0, Number(plotDefaults.streamflowHeadroom)) : 0.1;
+    const scalingOptions = displayOptions.plotScaling || {};
+    const yAxisHeadroom = numberOr(scalingOptions.headroom ?? plotDefaults.streamflowHeadroom, 0.1);
+    const temperatureHeadspace = numberOr(scalingOptions.temperatureHeadspace, 0.5);
+    const signedVariables = new Set(Array.isArray(scalingOptions.temperatureVariables) ? scalingOptions.temperatureVariables : ["hres_2m_air_temp"]);
+    const axisScaling = { extentRows: yearRows, headroom: yAxisHeadroom, signedHeadspace: temperatureHeadspace };
     const availableBasinVariables = useMemo(() => new Set(
       sourceVariables(config, "hops", { basinTimeseries: true })
         .concat(SOURCE_OPTIONS.slice(1).flatMap(source => sourceVariables(config, source.id, { basinTimeseries: true })))
@@ -1257,14 +1278,14 @@
     const variableA = varA === "none" ? null : config.variables.find(v => v.id === varA);
     const variableB = varB === "none" ? null : config.variables.find(v => v.id === varB);
     const variableSeries = [
-      variableA && { id: variableA.id, label: variableA.label, color: variableA.palette, kind: varAKind, axis: "left" },
-      variableB && { id: variableB.id, label: variableB.label, color: variableB.palette, kind: varBKind, axis: "right" }
+      variableA && { id: variableA.id, label: variableA.label, color: variableA.palette, kind: varAKind, axis: "left", signed: signedVariables.has(variableA.id) },
+      variableB && { id: variableB.id, label: variableB.label, color: variableB.palette, kind: varBKind, axis: "right", signed: signedVariables.has(variableB.id) }
     ].filter(Boolean);
     const bottomVariableA = bottomVarA === "none" ? null : config.variables.find(v => v.id === bottomVarA);
     const bottomVariableB = bottomVarB === "none" ? null : config.variables.find(v => v.id === bottomVarB);
     const bottomVariableSeries = [
-      bottomVariableA && { id: bottomVariableA.id, label: bottomVariableA.label, color: bottomVariableA.palette, kind: bottomVarAKind, axis: "left" },
-      bottomVariableB && { id: bottomVariableB.id, label: bottomVariableB.label, color: bottomVariableB.palette, kind: bottomVarBKind, axis: "right" }
+      bottomVariableA && { id: bottomVariableA.id, label: bottomVariableA.label, color: bottomVariableA.palette, kind: bottomVarAKind, axis: "left", signed: signedVariables.has(bottomVariableA.id) },
+      bottomVariableB && { id: bottomVariableB.id, label: bottomVariableB.label, color: bottomVariableB.palette, kind: bottomVarBKind, axis: "right", signed: signedVariables.has(bottomVariableB.id) }
     ].filter(Boolean);
     const streamSeriesFor = (showObservations, selectedModels) => [
       showObservations && { id: "observations", label: "Observations", color: "#ffffff", kind: "line-markers", flagField: "observations_flag" },
@@ -1408,8 +1429,8 @@
             topPlotEmpty
               ? e("div", { className: "plot-empty" }, "No data available")
               : visible.length > 0 && (topPlotMode === "streamflow"
-                ? e(Plot, { rows: visible, series: topStreamSeries, selected: date, onPick: setDate, onRangeSelect: zoomTimeRange, zeroBased: true, extentRows: yearRows, headroom: streamHeadroom, forecastBoundary: todayISO(), noDataThreshold })
-                : topPlotMode === "basin" && variableSeries.length > 0 && e(Plot, { rows: visible, series: variableSeries, selected: date, onPick: setDate, onRangeSelect: zoomTimeRange, dualAxis: true, forecastBoundary: todayISO(), noDataThreshold })),
+                ? e(Plot, { rows: visible, series: topStreamSeries, selected: date, onPick: setDate, onRangeSelect: zoomTimeRange, ...axisScaling, forecastBoundary: todayISO(), noDataThreshold })
+                : topPlotMode === "basin" && variableSeries.length > 0 && e(Plot, { rows: visible, series: variableSeries, selected: date, onPick: setDate, onRangeSelect: zoomTimeRange, dualAxis: true, ...axisScaling, forecastBoundary: todayISO(), noDataThreshold })),
             topPlotMode === "streamflow" && topStreamStats
           ),
           e("div", { className: "plot-resizer", onPointerDown: startPlotResize, title: "Drag to resize plots" },
@@ -1461,8 +1482,8 @@
             bottomPlotEmpty
               ? e("div", { className: "plot-empty" }, "No data available")
               : visible.length > 0 && (bottomPlotMode === "streamflow"
-                ? e(Plot, { rows: visible, series: bottomStreamSeries, selected: date, onPick: setDate, onRangeSelect: zoomTimeRange, zeroBased: true, extentRows: yearRows, headroom: streamHeadroom, forecastBoundary: todayISO(), noDataThreshold })
-                : bottomPlotMode === "basin" && bottomVariableSeries.length > 0 && e(Plot, { rows: visible, series: bottomVariableSeries, selected: date, onPick: setDate, onRangeSelect: zoomTimeRange, dualAxis: true, forecastBoundary: todayISO(), noDataThreshold })),
+                ? e(Plot, { rows: visible, series: bottomStreamSeries, selected: date, onPick: setDate, onRangeSelect: zoomTimeRange, ...axisScaling, forecastBoundary: todayISO(), noDataThreshold })
+                : bottomPlotMode === "basin" && bottomVariableSeries.length > 0 && e(Plot, { rows: visible, series: bottomVariableSeries, selected: date, onPick: setDate, onRangeSelect: zoomTimeRange, dualAxis: true, ...axisScaling, forecastBoundary: todayISO(), noDataThreshold })),
             bottomPlotMode === "streamflow" && bottomStreamStats
           )
         ),

@@ -167,6 +167,11 @@
     "animationIntervalMs": 1700,
     "ranges": [30, 90, 180, 365]
   },
+  "plotScaling": {
+    "headroom": 0.1,
+    "temperatureHeadspace": 0.5,
+    "temperatureVariables": ["hres_2m_air_temp"]
+  },
   "plotDefaults": {
     "topMode": "basin",
     "topVariableA": "hres_2m_air_temp",
@@ -185,7 +190,6 @@
     "bottomShowObservations": true,
     "bottomShowStats": true,
     "days": 30,
-    "streamflowHeadroom": 0.1,
     "topPlotPercent": 52
   }
 }
