@@ -151,13 +151,14 @@ Basin view plots (basin averages and streamflow) share one scaling scheme, imple
 "plotScaling": {
   "headroom": 0.1,
   "temperatureHeadspace": 0.5,
+  "temperatureToespace": 1.0,
   "temperatureVariables": ["hres_2m_air_temp"]
 }
 ```
 
 - **Yearly scale.** The axis range comes from all rows of the *selected year* (including forecast rows), not from the visible period. The scale therefore stays the same when switching 1M/3M/6M/1Y or drag-zooming, and periods stay comparable.
 - **Normal variables** (streamflow, runoff, precipitation, SWE, volumes, ...): the axis runs from 0 to the year's maximum x (1 + `headroom`). Each axis (left/right) is scaled separately from the series on it.
-- **Signed variables** (air temperature): the axis runs from the year's minimum minus `temperatureHeadspace` to the year's maximum plus `temperatureHeadspace`. `temperatureHeadspace` is in data units (degrees), not a percentage.
+- **Signed variables** (air temperature): the axis runs from the year's minimum minus `temperatureToespace` to the year's maximum plus `temperatureHeadspace`. Both are in data units (degrees), not percentages. `temperatureToespace` (space below the yearly minimum) falls back to `temperatureHeadspace` if not set.
   - A faint dashed zero line is drawn on the axis when 0 is inside the range.
   - Bars start at the zero line and go up or down from it, instead of starting at the bottom of the plot.
 - **A variable counts as signed only if its ID is in `temperatureVariables`** (default `["hres_2m_air_temp"]`). When adding a new variable that can be negative (for example another temperature, or an anomaly), add its ID to that list. Otherwise it is scaled from 0 and negative values are cut off.

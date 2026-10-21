@@ -170,6 +170,7 @@
   "plotScaling": {
     "headroom": 0.1,
     "temperatureHeadspace": 0.5,
+    "temperatureToespace": 1.0,
     "temperatureVariables": ["hres_2m_air_temp"]
   },
   "plotDefaults": {

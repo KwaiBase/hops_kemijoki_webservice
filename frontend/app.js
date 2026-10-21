@@ -1004,9 +1004,9 @@
   // SVG plot renderer used for basin averages and streamflow; supports dual axes, bars, markers, and drag zoom.
   // Y-axis scaling for basin plots (see "Plot y-axis scaling" in README.md).
   // Normal axes run from 0 to the selected year's maximum x (1 + headroom).
-  // Signed axes (series flagged `signed`, e.g. air temperature) run from the year's min to max, padded by a fixed `signedHeadspace` in data units.
+  // Signed axes (series flagged `signed`, e.g. air temperature) run from the year's min to max, padded by fixed `signedHeadspace` (above max) and `signedToespace` (below min) in data units.
   const numberOr = (value, fallback) => (value === null || value === undefined || value === "" || !Number.isFinite(Number(value))) ? fallback : Math.max(0, Number(value));
-  function Plot({ rows, series, selected, onPick, onRangeSelect, dualAxis = false, extentRows, headroom = 0.1, signedHeadspace = 0.5, forecastBoundary, noDataThreshold }) {
+  function Plot({ rows, series, selected, onPick, onRangeSelect, dualAxis = false, extentRows, headroom = 0.1, signedHeadspace = 0.5, signedToespace = 0.5, forecastBoundary, noDataThreshold }) {
     const w = 900, h = 220;
     const padLeft = 44, padRight = dualAxis ? 48 : 18, padTop = 22, padBottom = 30;
     const leftSeries = series.filter(s => (s.axis || "left") === "left");
@@ -1016,7 +1016,7 @@
       if (!values.length) return { min: 0, max: 1 };
       const min = Math.min(...values), max = Math.max(...values);
       if (extentRows) {
-        if (axisSeries.some(s => s.signed)) return { min: min - signedHeadspace, max: max + signedHeadspace };
+        if (axisSeries.some(s => s.signed)) return { min: min - signedToespace, max: max + signedHeadspace };
         return { min: Math.min(0, min), max: max > 0 ? max * (1 + headroom) : 1 };
       }
       return min === max ? { min: min - 1, max: max + 1 } : { min, max };
@@ -1242,7 +1242,8 @@
     const yAxisHeadroom = numberOr(scalingOptions.headroom ?? plotDefaults.streamflowHeadroom, 0.1);
     const temperatureHeadspace = numberOr(scalingOptions.temperatureHeadspace, 0.5);
     const signedVariables = new Set(Array.isArray(scalingOptions.temperatureVariables) ? scalingOptions.temperatureVariables : ["hres_2m_air_temp"]);
-    const axisScaling = { extentRows: yearRows, headroom: yAxisHeadroom, signedHeadspace: temperatureHeadspace };
+    const temperatureToespace = numberOr(scalingOptions.temperatureToespace, temperatureHeadspace);
+    const axisScaling = { extentRows: yearRows, headroom: yAxisHeadroom, signedHeadspace: temperatureHeadspace, signedToespace: temperatureToespace };
     const availableBasinVariables = useMemo(() => new Set(
       sourceVariables(config, "hops", { basinTimeseries: true })
         .concat(SOURCE_OPTIONS.slice(1).flatMap(source => sourceVariables(config, source.id, { basinTimeseries: true })))
