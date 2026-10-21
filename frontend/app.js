@@ -1002,7 +1002,7 @@
   }
 
   // SVG plot renderer used for basin averages and streamflow; supports dual axes, bars, markers, and drag zoom.
-  function Plot({ rows, series, selected, onPick, onRangeSelect, dualAxis = false, forecastBoundary, noDataThreshold }) {
+  function Plot({ rows, series, selected, onPick, onRangeSelect, dualAxis = false, zeroBased = false, forecastBoundary, noDataThreshold }) {
     const w = 900, h = 220;
     const padLeft = 44, padRight = dualAxis ? 48 : 18, padTop = 22, padBottom = 30;
     const leftSeries = series.filter(s => (s.axis || "left") === "left");
@@ -1011,6 +1011,8 @@
       const values = rows.flatMap(r => axisSeries.map(s => plotValue(r[s.id], noDataThreshold)).filter(Number.isFinite));
       if (!values.length) return { min: 0, max: 1 };
       const min = Math.min(...values), max = Math.max(...values);
+      // Zero-based axes run from 0 to the visible period's maximum plus 20% headroom.
+      if (zeroBased) return { min: 0, max: Math.max(1, max * 1.2) };
       return min === max ? { min: min - 1, max: max + 1 } : { min, max };
     };
     const leftExtent = axisExtent(leftSeries.length ? leftSeries : series);
@@ -1403,7 +1405,7 @@
             topPlotEmpty
               ? e("div", { className: "plot-empty" }, "No data available")
               : visible.length > 0 && (topPlotMode === "streamflow"
-                ? e(Plot, { rows: visible, series: topStreamSeries, selected: date, onPick: setDate, onRangeSelect: zoomTimeRange, forecastBoundary: todayISO(), noDataThreshold })
+                ? e(Plot, { rows: visible, series: topStreamSeries, selected: date, onPick: setDate, onRangeSelect: zoomTimeRange, zeroBased: true, forecastBoundary: todayISO(), noDataThreshold })
                 : topPlotMode === "basin" && variableSeries.length > 0 && e(Plot, { rows: visible, series: variableSeries, selected: date, onPick: setDate, onRangeSelect: zoomTimeRange, dualAxis: true, forecastBoundary: todayISO(), noDataThreshold })),
             topPlotMode === "streamflow" && topStreamStats
           ),
@@ -1456,7 +1458,7 @@
             bottomPlotEmpty
               ? e("div", { className: "plot-empty" }, "No data available")
               : visible.length > 0 && (bottomPlotMode === "streamflow"
-                ? e(Plot, { rows: visible, series: bottomStreamSeries, selected: date, onPick: setDate, onRangeSelect: zoomTimeRange, forecastBoundary: todayISO(), noDataThreshold })
+                ? e(Plot, { rows: visible, series: bottomStreamSeries, selected: date, onPick: setDate, onRangeSelect: zoomTimeRange, zeroBased: true, forecastBoundary: todayISO(), noDataThreshold })
                 : bottomPlotMode === "basin" && bottomVariableSeries.length > 0 && e(Plot, { rows: visible, series: bottomVariableSeries, selected: date, onPick: setDate, onRangeSelect: zoomTimeRange, dualAxis: true, forecastBoundary: todayISO(), noDataThreshold })),
             bottomPlotMode === "streamflow" && bottomStreamStats
           )
