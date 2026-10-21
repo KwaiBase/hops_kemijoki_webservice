@@ -88,6 +88,11 @@ def apply_enable_flags(config, display_options):
         and groups.get(v.get("group"), True) is not False
         and variables.get(v.get("id"), True) is not False
     ]
+    colors = flags("variableColors")
+    for variable in config["variables"]:
+        color = colors.get(variable.get("id"))
+        if isinstance(color, str) and color.strip():
+            variable["palette"] = color.strip()
 
 
 def json_response(handler: SimpleHTTPRequestHandler, payload, status=200):

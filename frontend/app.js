@@ -36,6 +36,15 @@
     const vars = sourceVariables(config, source, options);
     return vars.some(v => v.id === fallbackId) ? fallbackId : (vars[0]?.id || config.variables[0]?.id);
   };
+  const sourceOfVariable = (config, id, fallback = "hops") => config.variables.find(v => v.id === id)?.source || fallback;
+  // Resolves a configured default variable ID (or "none") to its source and a valid ID.
+  const pickVariable = (config, id, fallbackId, options = {}) => {
+    if (id === "none") return { source: defaultSource(config, "hops"), id: "none" };
+    const wanted = id || fallbackId;
+    const source = defaultSource(config, sourceOfVariable(config, wanted, "hops"));
+    return { source, id: defaultVariable(config, source, wanted, options) };
+  };
+  const asKind = (value, fallback) => (value === "bar" || value === "line" ? value : fallback);
   const defaultSource = (config, preferred) =>
     sourceVariables(config, preferred).length ? preferred : (SOURCE_OPTIONS.find(s => sourceVariables(config, s.id).length)?.id || preferred);
   const legendFor = (config, variable) => {
@@ -665,7 +674,8 @@
       if (showRivers) {
         fetch(dataUrl("/geojson/rivers.geojson")).then(r => r.json()).then(g => {
           if (cancelled) return;
-          const l = L.geoJSON(g, { pane: "river-pane", style: { color: "#5fd1ff", weight: 2, opacity: 0.9 } }).addTo(map);
+          const riverOptions = config.displayOptions?.map?.river || {};
+          const l = L.geoJSON(g, { pane: "river-pane", style: { color: riverOptions.color || "#5fd1ff", weight: Number(riverOptions.weight) || 2, opacity: Number(riverOptions.opacity) || 0.9 } }).addTo(map);
           staticLayersRef.current.push(l);
         });
       }
@@ -869,17 +879,19 @@
     const [start, setStart] = useState(addDays(todayISO(), -timeControls.historyDays));
     const dates = useDateSequence(start, config);
     const [date, setDate] = useState(todayISO());
-    const [sourceA, setSourceA] = useState(defaultSource(config, mapOptions.defaultSource || "hops"));
-    const [sourceB, setSourceB] = useState(defaultSource(config, mapOptions.defaultSource || "hops"));
-    const [varA, setVarA] = useState(defaultVariable(config, sourceA, mapOptions.mainDefaultVariable || "mean_runoff"));
-    const [varB, setVarB] = useState(defaultVariable(config, sourceB, mapOptions.comparisonDefaultVariable || "soil_state"));
+    const initialA = pickVariable(config, mapOptions.mainDefaultVariable, "mean_runoff");
+    const initialB = pickVariable(config, mapOptions.comparisonDefaultVariable, "soil_state");
+    const [sourceA, setSourceA] = useState(initialA.source);
+    const [sourceB, setSourceB] = useState(initialB.source);
+    const [varA, setVarA] = useState(initialA.id);
+    const [varB, setVarB] = useState(initialB.id);
     const [animate, setAnimate] = useState(false);
-    const [showRivers, setShowRivers] = useState(true);
+    const [showRivers, setShowRivers] = useState(mapOptions.showRivers !== false);
     const [showObs, setShowObs] = useState(observationOptions.enabledByDefault !== false);
-    const [showLegendA, setShowLegendA] = useState(true);
-    const [showLegendB, setShowLegendB] = useState(true);
-    const [maskA, setMaskA] = useState(true);
-    const [maskB, setMaskB] = useState(true);
+    const [showLegendA, setShowLegendA] = useState(mapOptions.showLegendA !== false);
+    const [showLegendB, setShowLegendB] = useState(mapOptions.showLegendB !== false);
+    const [maskA, setMaskA] = useState(mapOptions.maskA !== false);
+    const [maskB, setMaskB] = useState(mapOptions.maskB !== false);
     const [obsType, setObsType] = useState(observationOptions.defaultType || "temperature");
     const dateListRef = useRef(null);
     const mapA = useRef(null);
@@ -1135,30 +1147,34 @@
     const noDataThreshold = displayOptions.noDataThreshold ?? defaultDisplayOptions.noDataThreshold;
     const [rows, setRows] = useState([]);
     const [date, setDate] = useState(todayISO());
-    const baseSource = defaultSource(config, mapOptions.defaultSource || "hops");
-    const [mapSource, setMapSource] = useState(baseSource);
-    const [mapVar, setMapVar] = useState(defaultVariable(config, baseSource, mapOptions.basinDefaultVariable || "soil_state"));
-    const [mapMask, setMapMask] = useState(true);
-    const [showLegend, setShowLegend] = useState(true);
-    const [varASource, setVarASource] = useState(baseSource);
-    const [varBSource, setVarBSource] = useState(baseSource);
-    const [varA, setVarA] = useState(defaultVariable(config, baseSource, "mean_lz_volume", { basinTimeseries: true }));
-    const [varB, setVarB] = useState(defaultVariable(config, baseSource, "mean_uz_volume", { basinTimeseries: true }));
-    const [varAKind, setVarAKind] = useState("line");
-    const [varBKind, setVarBKind] = useState("bar");
+    const basinMapDefault = pickVariable(config, mapOptions.basinDefaultVariable, "soil_state");
+    const [mapSource, setMapSource] = useState(basinMapDefault.source);
+    const [mapVar, setMapVar] = useState(basinMapDefault.id);
+    const [mapMask, setMapMask] = useState(mapOptions.basinMapMask !== false);
+    const [showLegend, setShowLegend] = useState(mapOptions.basinShowLegend !== false);
+    const topA = pickVariable(config, plotDefaults.topVariableA, "mean_lz_volume", { basinTimeseries: true });
+    const topB = pickVariable(config, plotDefaults.topVariableB, "mean_uz_volume", { basinTimeseries: true });
+    const bottomA = pickVariable(config, plotDefaults.bottomVariableA, "mean_swe", { basinTimeseries: true });
+    const bottomB = pickVariable(config, plotDefaults.bottomVariableB, "mean_runoff", { basinTimeseries: true });
+    const [varASource, setVarASource] = useState(topA.source);
+    const [varBSource, setVarBSource] = useState(topB.source);
+    const [varA, setVarA] = useState(topA.id);
+    const [varB, setVarB] = useState(topB.id);
+    const [varAKind, setVarAKind] = useState(asKind(plotDefaults.topKindA, "line"));
+    const [varBKind, setVarBKind] = useState(asKind(plotDefaults.topKindB, "bar"));
     const [topPlotMode, setTopPlotMode] = useState(plotDefaults.topMode || "basin");
     const [bottomPlotMode, setBottomPlotMode] = useState(plotDefaults.bottomMode || "streamflow");
-    const [bottomVarASource, setBottomVarASource] = useState(baseSource);
-    const [bottomVarBSource, setBottomVarBSource] = useState(baseSource);
-    const [bottomVarA, setBottomVarA] = useState(defaultVariable(config, baseSource, "mean_swe", { basinTimeseries: true }));
-    const [bottomVarB, setBottomVarB] = useState(defaultVariable(config, baseSource, "mean_runoff", { basinTimeseries: true }));
-    const [bottomVarAKind, setBottomVarAKind] = useState("line");
-    const [bottomVarBKind, setBottomVarBKind] = useState("line");
-    const [days, setDays] = useState(30);
-    const [topShowStreamObservations, setTopShowStreamObservations] = useState(true);
-    const [bottomShowStreamObservations, setBottomShowStreamObservations] = useState(true);
-    const [topShowStreamStats, setTopShowStreamStats] = useState(true);
-    const [bottomShowStreamStats, setBottomShowStreamStats] = useState(true);
+    const [bottomVarASource, setBottomVarASource] = useState(bottomA.source);
+    const [bottomVarBSource, setBottomVarBSource] = useState(bottomB.source);
+    const [bottomVarA, setBottomVarA] = useState(bottomA.id);
+    const [bottomVarB, setBottomVarB] = useState(bottomB.id);
+    const [bottomVarAKind, setBottomVarAKind] = useState(asKind(plotDefaults.bottomKindA, "line"));
+    const [bottomVarBKind, setBottomVarBKind] = useState(asKind(plotDefaults.bottomKindB, "line"));
+    const [days, setDays] = useState((timeControls.ranges || [30, 90, 180, 365]).includes(plotDefaults.days) ? plotDefaults.days : 30);
+    const [topShowStreamObservations, setTopShowStreamObservations] = useState(plotDefaults.topShowObservations !== false);
+    const [bottomShowStreamObservations, setBottomShowStreamObservations] = useState(plotDefaults.bottomShowObservations !== false);
+    const [topShowStreamStats, setTopShowStreamStats] = useState(plotDefaults.topShowStats !== false);
+    const [bottomShowStreamStats, setBottomShowStreamStats] = useState(plotDefaults.bottomShowStats !== false);
     const [topModels, setTopModels] = useState(plotDefaults.topModels || ["hops", "hops_xgb"]);
     const [bottomModels, setBottomModels] = useState(plotDefaults.bottomModels || ["hops", "hops_xgb"]);
     const [topPlotPct, setTopPlotPct] = useState(plotDefaults.topPlotPercent || 52);

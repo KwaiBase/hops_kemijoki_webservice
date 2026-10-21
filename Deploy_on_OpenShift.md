@@ -172,7 +172,7 @@ always read from the built image.
 | --- | --- | --- |
 | `observation-stations.json` | `/mnt/hops/config/observation-stations.json` | Station id, label, `lat`/`lon`, `type` (`temperature`/`precipitation`), `dataFile` name, and optional `labelPosition` (`top`/`right`/`bottom`/`left`, default `right`) for the Obs/Sim label |
 | `map-options.json` | `/mnt/hops/config/map-options.json` | `mapVariables` (main maps) and `basinVariables` (basin plot selector) — which already-defined variable IDs are selectable |
-| `display-options.json` | `/mnt/hops/config/display-options.json` | Model labels/colors/default selection, basin list and map label position/zoom footprint, per-basin `enabledModels` allow-list, default map source/variable and mask opacity, legend `title`/`unit`/`min`/`max`/color `stops` per variable ID, observation defaults, history/forecast/animation/date-range settings, plot defaults, and `noDataThreshold` |
+| `display-options.json` | `/mnt/hops/config/display-options.json` | Model labels/colors/default selection, basin plot/map variable colors via `variableColors` (variable ID -> color, overrides `palette` in `app.json`), basin list and map label position/zoom footprint, per-basin `enabledModels` allow-list, default map source/variable and mask opacity, legend `title`/`unit`/`min`/`max`/color `stops` per variable ID, observation defaults, history/forecast/animation/date-range settings, plot defaults, and `noDataThreshold` |
 | `app.json` (not externally configurable) | Baked into image only, no mount override | Variable catalog (id/label/unit/palette), map bounds/zoom/center, logos, GeoJSON source paths |
 
 Replace files at their temporary name and rename into place. See the subsections below for the exact
