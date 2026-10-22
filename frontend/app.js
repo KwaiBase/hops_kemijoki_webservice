@@ -1003,7 +1003,7 @@
 
   // SVG plot renderer used for basin averages and streamflow; supports dual axes, bars, markers, and drag zoom.
   // Y-axis scaling for basin plots (see "Plot y-axis scaling" in README.md).
-  // Normal axes run from 0 to the selected year's maximum x (1 + headroom).
+  // Normal axes run from 0 to the selected year's maximum x (1 + headroom); for the latest year the previous year's values are included too.
   // Signed axes (series flagged `signed`, e.g. air temperature) run from the year's min to max, padded by fixed `signedHeadspace` (above max) and `signedToespace` (below min) in data units.
   const numberOr = (value, fallback) => (value === null || value === undefined || value === "" || !Number.isFinite(Number(value))) ? fallback : Math.max(0, Number(value));
   function Plot({ rows, series, selected, onPick, onRangeSelect, dualAxis = false, extentRows, headroom = 0.1, signedHeadspace = 0.5, signedToespace = 0.5, forecastBoundary, noDataThreshold }) {
@@ -1237,7 +1237,12 @@
       return baseVisible.filter(r => r.date >= zoomRange.start && r.date <= zoomRange.end);
     }, [baseVisible, zoomRange]);
     const visibleDates = useMemo(() => visible.map(row => row.date), [visible]);
-    const yearRows = useMemo(() => rows.filter(r => Number(r.date.slice(0, 4)) === selectedYear), [rows, selectedYear]);
+    // For the latest year, the previous year's rows are included in the axis extent so early-year plots keep a stable scale until the current year exceeds it.
+    const isLatestYear = selectedYear === availableYears[availableYears.length - 1];
+    const yearRows = useMemo(() => rows.filter(r => {
+      const year = Number(r.date.slice(0, 4));
+      return year === selectedYear || (isLatestYear && year === selectedYear - 1);
+    }), [rows, selectedYear, isLatestYear]);
     const scalingOptions = displayOptions.plotScaling || {};
     const yAxisHeadroom = numberOr(scalingOptions.headroom ?? plotDefaults.streamflowHeadroom, 0.1);
     const temperatureHeadspace = numberOr(scalingOptions.temperatureHeadspace, 0.5);

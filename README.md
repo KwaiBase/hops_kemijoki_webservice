@@ -181,6 +181,7 @@ Basin view plots (basin averages and streamflow) share one scaling scheme, imple
 ```
 
 - **Yearly scale.** The axis range comes from all rows of the *selected year* (including forecast rows), not from the visible period. The scale therefore stays the same when switching 1M/3M/6M/1Y or drag-zooming, and periods stay comparable.
+- **Latest year uses the previous year as a floor.** For the latest year in the data, the previous year's rows are included in the extent as well, so the axis is the previous year's maximum (and minimum for signed variables) until the latest year exceeds it, after which it follows the latest year. This avoids squashed early-year plots in low-flow months. Earlier years use only their own values. If there is no previous year in the data, only the selected year is used.
 - **Normal variables** (streamflow, runoff, precipitation, SWE, volumes, ...): the axis runs from 0 to the year's maximum x (1 + `headroom`). Each axis (left/right) is scaled separately from the series on it.
 - **Signed variables** (air temperature): the axis runs from the year's minimum minus `temperatureToespace` to the year's maximum plus `temperatureHeadspace`. Both are in data units (degrees), not percentages. `temperatureToespace` (space below the yearly minimum) falls back to `temperatureHeadspace` if not set.
   - A faint dashed zero line is drawn on the axis when 0 is inside the range.
