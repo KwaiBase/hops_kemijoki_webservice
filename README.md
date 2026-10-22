@@ -125,13 +125,15 @@ running data-dependent views locally.
 
 ## Extending
 
-- **Define the variable.** Add one object to the `variables` array in `config/app.json`. Give it a unique `id`, plus `label`, `unit`, `palette`, `source`, and `group`. For example:
+- **Define the variable.** Add one object to the `variables` array in `config/display-options.json` (mounted in OpenShift, so no rebuild). Give it a unique `id`, plus `label`, `unit`, `palette`, `source`, and `group`. For example:
 
   ```json
-  {"id": "open_example", "label": "Open Example", "unit": "mm", "palette": "#55c7e8", "source": "hops", "group": "Open"}
+  "variables": [
+    {"id": "open_example", "label": "Open Example", "unit": "mm", "palette": "#55c7e8", "source": "hops", "group": "Open"}
+  ]
   ```
 
-  `id` is the common key used in data filenames/columns and the other configuration files. Use one of the supported source IDs: `hops`, `ecmwf`, `hsaf`, or `clms`. The `group` is a UI selector heading; it does not create a data directory. For a map-only variable, add `"basinTimeseries": false`.
+  Entries are merged with the catalog in `config/app.json` by `id`: a new `id` is added, and an existing `id` has the listed fields overridden. Existing variables stay in `app.json`; new ones can go in either file, but `display-options.json` needs no image rebuild. `id` is the common key used in data filenames/columns and the other configuration files. Use one of the supported source IDs: `hops`, `ecmwf`, `hsaf`, or `clms`. The `group` is a UI selector heading; it does not create a data directory. For a basin-plot-only variable, simply leave it out of `mapVariables`; for a map-only variable, add `"basinTimeseries": false`.
 
 - **Allow it in the relevant selectors.** Add the ID to `mapVariables` in `config/map-options.json` for map selection (main maps and the basin detail map). Add it to `basinVariables` in that file if it has basin-average timeseries data and should be selectable in basin plots. These are arrays of IDs, not full variable objects. A basin-timeseries variable should not set `basinTimeseries` to `false`.
 
@@ -146,13 +148,13 @@ running data-dependent views locally.
 
   For example, the HOPS raster for `open_example` on 2026-10-22 is `/mnt/hops/data/png/hops/open_example/2026-10-22.png`; its basin value column goes in `/mnt/hops/data/basins/hops/6501700.csv`. Basin CSVs need a `date` column and a column named exactly after each variable ID. Put each variable's data in the CSV for its source. The API merges the four supported source files by date. Values at or below `noDataThreshold` (normally `-99998`) are treated as missing.
 
-- **Configure display behavior if needed.** Edit `config/display-options.json` (preserve the current settings in that file). No entry is required for a new variable unless you need an override: `variableColors` maps IDs to palette overrides, `legends` maps IDs to map legend definitions, and `enabledVariables` maps IDs to visibility flags. `enabledGroups` maps exact `group` labels to flags; omitted flags default to enabled. Add an ID to `map.mainDefaultVariable`, `map.comparisonDefaultVariable`, `map.basinDefaultVariable`, or the `plotDefaults` variable fields only when it should be selected by default. If values can be negative, add its ID to `plotScaling.temperatureVariables` so the basin plot uses a signed axis.
+- **Configure display behavior if needed.** Edit `config/display-options.json` (preserve the current settings in that file). No entry is required for a new variable unless you need an override: set its color with `palette` in the `variables` entry (the optional `variableColors` map of ID -> color is still honored and takes precedence, but is no longer needed), `legends` maps IDs to map legend definitions, and `enabledVariables` maps IDs to visibility flags. `enabledGroups` maps exact `group` labels to flags; omitted flags default to enabled. Add an ID to `map.mainDefaultVariable`, `map.comparisonDefaultVariable`, `map.basinDefaultVariable`, or the `plotDefaults` variable fields only when it should be selected by default. If values can be negative, add its ID to `plotScaling.temperatureVariables` so the basin plot uses a signed axis.
 
 - **Add a category/group within an existing source.** Set the new exact category label as `group` in each new variable definition. The dropdown heading is generated from that field, so no category-specific data folder is needed: use the same source/ID paths above. Add the variables to `mapVariables` and/or `basinVariables` as appropriate. Add the category label to `enabledGroups` in `display-options.json` if operators should be able to enable/disable the whole group. If this is a land-cover category requiring a mask, also add its GeoJSON mask under `data/geojson/` and extend `VARIABLE_MASKS`/`maskForVariable` in `frontend/app.js`; the existing `open`, `forest`, and `bog` prefixes are the only ones recognized automatically.
 
 - **Adding a new source requires code changes.** The current frontend source list and backend basin-file merge support only HOPS, ECMWF, HSAF, and CLMS. Extend `SOURCE_OPTIONS` in `frontend/app.js` and `read_basin_rows` in `server.py` before adding a source to variable definitions or expecting its map/basin data to load.
 
-- **Deploy the changes.** Locally, the bundled config files are used by default. In OpenShift, `map-options.json` and `display-options.json` are read from `/mnt/hops/config/` at runtime, so their changes apply on refresh without rebuilding. `app.json` has no mounted override and is baked into the image: changing the variable catalog requires building and rolling out a new image. Keep operational PNG/CSV data on the mounted data volume, not in Git.
+- **Deploy the changes.** Locally, the bundled config files are used by default. In OpenShift, `map-options.json` and `display-options.json` are read from `/mnt/hops/config/` at runtime, so their changes (including new variable definitions) apply on refresh without rebuilding. A rebuild and rollout is needed only for changes to `app.json` or code (for example a new source or mask). Keep operational PNG/CSV data on the mounted data volume, not in Git.
 
 - Add streamflow observation data in `data/basins/streamflow/{basin}_obs.csv`; use `flag` value `1` for unreliable observations
 - Add streamflow model data in `data/basins/streamflow/{basin}_{model}.csv`

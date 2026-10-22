@@ -2,51 +2,61 @@
   "noDataThreshold": -99998,
   "models": [
     {"id": "hops", "label": "HOPS", "color": "#66d9ef", "defaultSelected": true, "enabled": true},
-    {"id": "hops_xgb", "label": "HOPS-XGB", "color": "#f8d56b", "defaultSelected": true, "enabled": true},
+    {"id": "hops_xgb", "label": "HOPS-XGB", "color": "#f8d56b", "defaultSelected": false, "enabled": false},
     {"id": "lstm", "label": "LSTM", "color": "#b48cff", "defaultSelected": false, "enabled": true},
     {"id": "gru", "label": "GRU", "color": "#ff8fb1", "defaultSelected": false, "enabled": true},
-    {"id": "lisflood", "label": "LISFLOOD", "color": "#81d66b", "defaultSelected": false, "enabled": true}
+    {"id": "lisflood", "label": "LISFLOOD", "color": "#81d66b", "defaultSelected": false, "enabled": false}
   ],
-  "variableColors": {
-    "soil_state": "#6dd6ff",
-    "mean_thaw_depth": "#d49a66",
-    "mean_frost_depth": "#8ec9ff",
-    "mean_snow_depth": "#f4fbff",
-    "mean_swe": "#6dd6ff",
-    "mean_lz_volume": "#74d680",
-    "mean_uz_volume": "#4fd08b",
-    "mean_runoff": "#55c7e8",
-    "open_thaw_depth": "#d49a66",
-    "open_frost_depth": "#8ec9ff",
-    "open_snow_depth": "#f4fbff",
-    "open_swe": "#6dd6ff",
-    "open_lz_volume": "#74d680",
-    "open_uz_volume": "#4fd08b",
-    "open_runoff": "#55c7e8",
-    "forest_thaw_depth": "#d49a66",
-    "forest_frost_depth": "#8ec9ff",
-    "forest_snow_depth": "#f4fbff",
-    "forest_swe": "#6dd6ff",
-    "forest_lz_volume": "#74d680",
-    "forest_uz_volume": "#4fd08b",
-    "forest_runoff": "#55c7e8",
-    "bog_thaw_depth": "#d49a66",
-    "bog_frost_depth": "#8ec9ff",
-    "bog_snow_depth": "#f4fbff",
-    "bog_swe": "#6dd6ff",
-    "bog_sm_volume": "#4fd08b",
-    "bog_runoff": "#55c7e8",
-    "hres_24h_precip": "#8ce0d5",
-    "hres_2m_air_temp": "#f0b35a",
-    "h13_swe": "#6dd6ff",
-    "h65_swe": "#8ec9ff",
-    "swe_5km": "#f4fbff"
+  "plotScaling": {
+    "headroom": 0.1,
+    "temperatureHeadspace": 5.0,
+    "temperatureToespace": 5.0,
+    "temperatureVariables": ["hres_2m_air_temp", "hres_2m_air_temp_min", "hres_2m_air_temp_max"]
   },
+  "variables": [
+    {"id": "soil_state", "label": "Soil State", "unit": "index", "palette": "#F2F5F7", "source": "hops", "group": "Mean", "basinTimeseries": false},
+    {"id": "mean_thaw_depth", "label": "Mean Thaw Depth", "unit": "cm", "palette": "#4DD0E1", "source": "hops", "group": "Mean"},
+    {"id": "mean_frost_depth", "label": "Mean Frost Depth", "unit": "cm", "palette": "#4DD0E1", "source": "hops", "group": "Mean"},
+    {"id": "mean_snow_depth", "label": "Mean Snow Depth", "unit": "cm", "palette": "#4DD0E1", "source": "hops", "group": "Mean"},
+    {"id": "mean_swe", "label": "Mean Snow (SWE)", "unit": "mm", "palette": "#4DD0E1", "source": "hops", "group": "Mean"},
+    {"id": "mean_lz_volume", "label": "Mean LZ Volume", "unit": "mm", "palette": "#4DD0E1", "source": "hops", "group": "Mean"},
+    {"id": "mean_uz_volume", "label": "Mean UZ Volume", "unit": "mm", "palette": "#4DD0E1", "source": "hops", "group": "Mean"},
+    {"id": "mean_runoff", "label": "Mean Runoff", "unit": "mm/day", "palette": "#4DD0E1", "source": "hops", "group": "Mean"},
+    {"id": "open_thaw_depth", "label": "Open Thaw Depth", "unit": "cm", "palette": "#A3E635", "source": "hops", "group": "Open"},
+    {"id": "open_frost_depth", "label": "Open Frost Depth", "unit": "cm", "palette": "#A3E635", "source": "hops", "group": "Open"},
+    {"id": "open_snow_depth", "label": "Open Snow Depth", "unit": "cm", "palette": "#A3E635", "source": "hops", "group": "Open"},
+    {"id": "open_swe", "label": "Open Snow (SWE)", "unit": "mm", "palette": "#A3E635", "source": "hops", "group": "Open"},
+    {"id": "open_lz_volume", "label": "Open LZ Volume", "unit": "mm", "palette": "#A3E635", "source": "hops", "group": "Open"},
+    {"id": "open_uz_volume", "label": "Open UZ Volume", "unit": "mm", "palette": "#A3E635", "source": "hops", "group": "Open"},
+    {"id": "open_runoff", "label": "Open Runoff", "unit": "mm/day", "palette": "#A3E635", "source": "hops", "group": "Open"},
+    {"id": "forest_thaw_depth", "label": "Forest Thaw Depth", "unit": "cm", "palette": "#FFB454", "source": "hops", "group": "Forest"},
+    {"id": "forest_frost_depth", "label": "Forest Frost Depth", "unit": "cm", "palette": "#FFB454", "source": "hops", "group": "Forest"},
+    {"id": "forest_snow_depth", "label": "Forest Snow Depth", "unit": "cm", "palette": "#FFB454", "source": "hops", "group": "Forest"},
+    {"id": "forest_swe", "label": "Forest Snow (SWE)", "unit": "mm", "palette": "#FFB454", "source": "hops", "group": "Forest"},
+    {"id": "forest_lz_volume", "label": "Forest LZ Volume", "unit": "mm", "palette": "#FFB454", "source": "hops", "group": "Forest"},
+    {"id": "forest_uz_volume", "label": "Forest UZ Volume", "unit": "mm", "palette": "#FFB454", "source": "hops", "group": "Forest"},
+    {"id": "forest_runoff", "label": "Forest Runoff", "unit": "mm/day", "palette": "#FFB454", "source": "hops", "group": "Forest"},
+    {"id": "bog_thaw_depth", "label": "Bog Thaw Depth", "unit": "cm", "palette": "#D98BFF", "source": "hops", "group": "Bog"},
+    {"id": "bog_frost_depth", "label": "Bog Frost Depth", "unit": "cm", "palette": "#D98BFF", "source": "hops", "group": "Bog"},
+    {"id": "bog_snow_depth", "label": "Bog Snow Depth", "unit": "cm", "palette": "#D98BFF", "source": "hops", "group": "Bog"},
+    {"id": "bog_swe", "label": "Bog Snow (SWE)", "unit": "mm", "palette": "#D98BFF", "source": "hops", "group": "Bog"},
+    {"id": "bog_sm_volume", "label": "Bog SM Volume", "unit": "mm", "palette": "#D98BFF", "source": "hops", "group": "Bog"},
+    {"id": "bog_runoff", "label": "Bog Runoff", "unit": "mm/day", "palette": "#D98BFF", "source": "hops", "group": "Bog"},
+    {"id": "hres_24h_precip", "label": "HRES 24h Precip.", "unit": "mm", "palette": "#FF5D8F", "source": "ecmwf", "group": "ECMWF"},
+    {"id": "hres_2m_air_temp", "label": "HRES 2m Air Temp.", "unit": "C", "palette": "#FFD166", "source": "ecmwf", "group": "ECMWF"},
+    {"id": "h13_swe", "label": "H13 SWE", "unit": "mm", "palette": "#66E3FF", "source": "hsaf", "group": "HSAF"},
+    {"id": "h65_swe", "label": "H65 SWE", "unit": "mm", "palette": "#B388FF", "source": "hsaf", "group": "HSAF"},
+    {"id": "swe_5km", "label": "SWE 5km", "unit": "mm", "palette": "#C5D86D", "source": "clms", "group": "CLMS"},
+    {"id": "hres_2m_air_temp_min", "label": "HRES 2m Air Temp. Min", "unit": "C", "palette": "#FFD166", "source": "ecmwf", "group": "ECMWF"},
+    {"id": "hres_2m_air_temp_max", "label": "HRES 2m Air Temp. Max", "unit": "C", "palette": "#FFD166", "source": "ecmwf", "group": "ECMWF"},
+    {"id": "hres_sunshine_sum", "label": "HRES Sunshine Sum", "unit": "h", "palette": "#FFE066", "source": "ecmwf", "group": "ECMWF"},
+    {"id": "hres_shortwave_sum", "label": "HRES Shortwave Sum", "unit": "MJ/m\u00b2", "palette": "#FF9F43", "source": "ecmwf", "group": "ECMWF"}
+  ],
   "enabledSources": {
     "hops": true,
     "ecmwf": true,
-    "hsaf": true,
-    "clms": true
+    "hsaf": false,
+    "clms": false
   },
   "enabledGroups": {
     "Mean": true,
@@ -54,43 +64,43 @@
     "Forest": true,
     "Bog": true,
     "ECMWF": true,
-    "HSAF": true,
-    "CLMS": true
+    "HSAF": false,
+    "CLMS": false
   },
   "enabledVariables": {
     "soil_state": true,
-    "mean_thaw_depth": true,
-    "mean_frost_depth": true,
+    "mean_thaw_depth": false,
+    "mean_frost_depth": false,
     "mean_snow_depth": true,
     "mean_swe": true,
     "mean_lz_volume": true,
     "mean_uz_volume": true,
     "mean_runoff": true,
-    "open_thaw_depth": true,
-    "open_frost_depth": true,
+    "open_thaw_depth": false,
+    "open_frost_depth": false,
     "open_snow_depth": true,
     "open_swe": true,
     "open_lz_volume": true,
     "open_uz_volume": true,
     "open_runoff": true,
-    "forest_thaw_depth": true,
-    "forest_frost_depth": true,
+    "forest_thaw_depth": false,
+    "forest_frost_depth": false,
     "forest_snow_depth": true,
     "forest_swe": true,
     "forest_lz_volume": true,
     "forest_uz_volume": true,
     "forest_runoff": true,
-    "bog_thaw_depth": true,
-    "bog_frost_depth": true,
+    "bog_thaw_depth": false,
+    "bog_frost_depth": false,
     "bog_snow_depth": true,
     "bog_swe": true,
     "bog_sm_volume": true,
     "bog_runoff": true,
     "hres_24h_precip": true,
     "hres_2m_air_temp": true,
-    "h13_swe": true,
-    "h65_swe": true,
-    "swe_5km": true
+    "h13_swe": false,
+    "h65_swe": false,
+    "swe_5km": false
   },
   "basins": [
     {"id": "6501700", "label": "Kemihaara", "lat": 67.19853341174975, "lon": 27.785512523108022, "areaKm2": 0, "extentLon": 0.55, "extentLat": 0.34},
@@ -113,47 +123,398 @@
     "maskB": true,
     "basinMapMask": true,
     "basinShowLegend": true,
-    "river": {"color": "#5fd1ff", "weight": 2, "opacity": 0.9},
+    "river": {"color": "#475fa8", "weight": 2, "opacity": 0.9},
     "projectMaskOpacity": 0.48,
     "basinMaskOpacity": 0.5,
     "variableMaskOpacity": 0.85
   },
-  "legendWidth": 150,
+  "legendWidth": 100,
   "legends": {
-    "soil_state": {
-      "title": "Soil State",
-      "unit": "index",
+    "forest_frost_depth": {
+      "title": "Forest: Frost Depth",
+      "unit": "cm",
       "stops": [
-        {"label": "Low", "color": "#193d35"},
-        {"label": "Medium", "color": "#4f9f75"},
-        {"label": "High", "color": "#b8e6b0"}
+        {"label": "0", "color": "#f2f0fa"},
+        {"label": "20", "color": "#cbc6ea"},
+        {"label": "40", "color": "#9a90d0"},
+        {"label": "60", "color": "#6a54b0"},
+        {"label": "\u2265 80", "color": "#3b1a7e"}
       ]
     },
-    "mean_runoff": {
-      "title": "Mean Runoff",
-      "unit": "mm/day",
+    "forest_lz_volume": {
+      "title": "Forest: LZ Soil Moisture",
+      "unit": "%",
       "stops": [
-        {"label": "Low", "color": "#173f5f"},
-        {"label": "Medium", "color": "#55c7e8"},
-        {"label": "High", "color": "#f4fbff"}
+        {"label": "\u2264 40", "color": "#f6eedb"},
+        {"label": "55", "color": "#d9c792"},
+        {"label": "70", "color": "#93b862"},
+        {"label": "85", "color": "#3f9256"},
+        {"label": "100", "color": "#14583a"}
       ]
     },
-    "mean_swe": {
-      "title": "Mean Snow (SWE)",
-      "unit": "mm",
+    "forest_runoff": {
+      "title": "Forest: Runoff",
+      "unit": "mm/day ",
       "stops": [
-        {"label": "Low", "color": "#315b72"},
-        {"label": "Medium", "color": "#6dd6ff"},
-        {"label": "High", "color": "#f4fbff"}
+        {"label": "0.1\u20130.2", "color": "#c6dbef"},
+        {"label": "0.2\u20130.5", "color": "#9ecae1"},
+        {"label": "0.5\u20131", "color": "#6baed6"},
+        {"label": "1\u20132", "color": "#4292c6"},
+        {"label": "2\u20135", "color": "#2171b5"},
+        {"label": "5\u201310", "color": "#08519c"},
+        {"label": "10\u201320", "color": "#08306b"},
+        {"label": "\u2265 20", "color": "#3f007d"}
+      ]
+    },
+    "forest_snow_depth": {
+      "title": "Forest: Snow Depth",
+      "unit": "cm ",
+      "stops": [
+        {"label": "1\u20135", "color": "#d4eef8"},
+        {"label": "5\u201310", "color": "#a6daf0"},
+        {"label": "10\u201320", "color": "#73c0e6"},
+        {"label": "20\u201330", "color": "#4a9fd8"},
+        {"label": "30\u201340", "color": "#2f7cc7"},
+        {"label": "40\u201350", "color": "#2a5aad"},
+        {"label": "50\u201370", "color": "#2f3c8f"},
+        {"label": "70\u2013100", "color": "#3b2275"},
+        {"label": "\u2265 100", "color": "#4d0b5c"}
+      ]
+    },
+    "forest_swe": {
+      "title": "Forest: Snow Water Equivalent",
+      "unit": "mm ",
+      "stops": [
+        {"label": "1\u201310", "color": "#d4eef8"},
+        {"label": "10\u201325", "color": "#a6daf0"},
+        {"label": "25\u201350", "color": "#73c0e6"},
+        {"label": "50\u201375", "color": "#4a9fd8"},
+        {"label": "75\u2013100", "color": "#2f7cc7"},
+        {"label": "100\u2013150", "color": "#2a5aad"},
+        {"label": "150\u2013200", "color": "#2f3c8f"},
+        {"label": "200\u2013300", "color": "#3b2275"},
+        {"label": "\u2265 300", "color": "#4d0b5c"}
+      ]
+    },
+    "forest_thaw_depth": {
+      "title": "Forest: Thaw Depth",
+      "unit": "cm",
+      "stops": [
+        {"label": "0", "color": "#fbf3e4"},
+        {"label": "20", "color": "#ecd09b"},
+        {"label": "40", "color": "#d39a52"},
+        {"label": "60", "color": "#a5612a"},
+        {"label": "\u2265 80", "color": "#5e3112"}
+      ]
+    },
+    "forest_uz_volume": {
+      "title": "Forest: UZ Soil Moisture",
+      "unit": "%",
+      "stops": [
+        {"label": "0", "color": "#f6eedb"},
+        {"label": "12.5", "color": "#d9c792"},
+        {"label": "25", "color": "#93b862"},
+        {"label": "37.5", "color": "#3f9256"},
+        {"label": "\u2265 50", "color": "#14583a"}
       ]
     },
     "open_frost_depth": {
-      "title": "Open Frost Depth",
+      "title": "Open: Frost Depth",
       "unit": "cm",
       "stops": [
-        {"label": "Low", "color": "#0b3d66"},
-        {"label": "Medium", "color": "#8ec9ff"},
-        {"label": "High", "color": "#f4fbff"}
+        {"label": "0", "color": "#f2f0fa"},
+        {"label": "20", "color": "#cbc6ea"},
+        {"label": "40", "color": "#9a90d0"},
+        {"label": "60", "color": "#6a54b0"},
+        {"label": "\u2265 80", "color": "#3b1a7e"}
+      ]
+    },
+    "open_lz_volume": {
+      "title": "Open: LZ Soil Moisture",
+      "unit": "%",
+      "stops": [
+        {"label": "\u2264 40", "color": "#f6eedb"},
+        {"label": "55", "color": "#d9c792"},
+        {"label": "70", "color": "#93b862"},
+        {"label": "85", "color": "#3f9256"},
+        {"label": "100", "color": "#14583a"}
+      ]
+    },
+    "open_runoff": {
+      "title": "Open: Runoff",
+      "unit": "mm/day ",
+      "stops": [
+        {"label": "0.1\u20130.2", "color": "#c6dbef"},
+        {"label": "0.2\u20130.5", "color": "#9ecae1"},
+        {"label": "0.5\u20131", "color": "#6baed6"},
+        {"label": "1\u20132", "color": "#4292c6"},
+        {"label": "2\u20135", "color": "#2171b5"},
+        {"label": "5\u201310", "color": "#08519c"},
+        {"label": "10\u201320", "color": "#08306b"},
+        {"label": "\u2265 20", "color": "#3f007d"}
+      ]
+    },
+    "open_snow_depth": {
+      "title": "Open: Snow Depth",
+      "unit": "cm ",
+      "stops": [
+        {"label": "1\u20135", "color": "#d4eef8"},
+        {"label": "5\u201310", "color": "#a6daf0"},
+        {"label": "10\u201320", "color": "#73c0e6"},
+        {"label": "20\u201330", "color": "#4a9fd8"},
+        {"label": "30\u201340", "color": "#2f7cc7"},
+        {"label": "40\u201350", "color": "#2a5aad"},
+        {"label": "50\u201370", "color": "#2f3c8f"},
+        {"label": "70\u2013100", "color": "#3b2275"},
+        {"label": "\u2265 100", "color": "#4d0b5c"}
+      ]
+    },
+    "open_swe": {
+      "title": "Open: Snow Water Equivalent",
+      "unit": "mm ",
+      "stops": [
+        {"label": "1\u201310", "color": "#d4eef8"},
+        {"label": "10\u201325", "color": "#a6daf0"},
+        {"label": "25\u201350", "color": "#73c0e6"},
+        {"label": "50\u201375", "color": "#4a9fd8"},
+        {"label": "75\u2013100", "color": "#2f7cc7"},
+        {"label": "100\u2013150", "color": "#2a5aad"},
+        {"label": "150\u2013200", "color": "#2f3c8f"},
+        {"label": "200\u2013300", "color": "#3b2275"},
+        {"label": "\u2265 300", "color": "#4d0b5c"}
+      ]
+    },
+    "open_thaw_depth": {
+      "title": "Open: Thaw Depth",
+      "unit": "cm",
+      "stops": [
+        {"label": "0", "color": "#fbf3e4"},
+        {"label": "20", "color": "#ecd09b"},
+        {"label": "40", "color": "#d39a52"},
+        {"label": "60", "color": "#a5612a"},
+        {"label": "\u2265 80", "color": "#5e3112"}
+      ]
+    },
+    "open_uz_volume": {
+      "title": "Open: UZ Soil Moisture",
+      "unit": "%",
+      "stops": [
+        {"label": "0", "color": "#f6eedb"},
+        {"label": "12.5", "color": "#d9c792"},
+        {"label": "25", "color": "#93b862"},
+        {"label": "37.5", "color": "#3f9256"},
+        {"label": "\u2265 50", "color": "#14583a"}
+      ]
+    },
+    "bog_frost_depth": {
+      "title": "Bog: Frost Depth",
+      "unit": "cm",
+      "stops": [
+        {"label": "0", "color": "#f2f0fa"},
+        {"label": "20", "color": "#cbc6ea"},
+        {"label": "40", "color": "#9a90d0"},
+        {"label": "60", "color": "#6a54b0"},
+        {"label": "\u2265 80", "color": "#3b1a7e"}
+      ]
+    },
+    "bog_runoff": {
+      "title": "Bog: Runoff",
+      "unit": "mm/day ",
+      "stops": [
+        {"label": "0.1\u20130.2", "color": "#c6dbef"},
+        {"label": "0.2\u20130.5", "color": "#9ecae1"},
+        {"label": "0.5\u20131", "color": "#6baed6"},
+        {"label": "1\u20132", "color": "#4292c6"},
+        {"label": "2\u20135", "color": "#2171b5"},
+        {"label": "5\u201310", "color": "#08519c"},
+        {"label": "10\u201320", "color": "#08306b"},
+        {"label": "\u2265 20", "color": "#3f007d"}
+      ]
+    },
+    "bog_sm_volume": {
+      "title": "Bog: Soil Moisture",
+      "unit": "%",
+      "stops": [
+        {"label": "\u2264 40", "color": "#f6eedb"},
+        {"label": "55", "color": "#d9c792"},
+        {"label": "70", "color": "#93b862"},
+        {"label": "85", "color": "#3f9256"},
+        {"label": "100", "color": "#14583a"}
+      ]
+    },
+    "bog_snow_depth": {
+      "title": "Bog: Snow Depth",
+      "unit": "cm ",
+      "stops": [
+        {"label": "1\u20135", "color": "#d4eef8"},
+        {"label": "5\u201310", "color": "#a6daf0"},
+        {"label": "10\u201320", "color": "#73c0e6"},
+        {"label": "20\u201330", "color": "#4a9fd8"},
+        {"label": "30\u201340", "color": "#2f7cc7"},
+        {"label": "40\u201350", "color": "#2a5aad"},
+        {"label": "50\u201370", "color": "#2f3c8f"},
+        {"label": "70\u2013100", "color": "#3b2275"},
+        {"label": "\u2265 100", "color": "#4d0b5c"}
+      ]
+    },
+    "bog_swe": {
+      "title": "Bog: Snow Water Equivalent",
+      "unit": "mm ",
+      "stops": [
+        {"label": "1\u201310", "color": "#d4eef8"},
+        {"label": "10\u201325", "color": "#a6daf0"},
+        {"label": "25\u201350", "color": "#73c0e6"},
+        {"label": "50\u201375", "color": "#4a9fd8"},
+        {"label": "75\u2013100", "color": "#2f7cc7"},
+        {"label": "100\u2013150", "color": "#2a5aad"},
+        {"label": "150\u2013200", "color": "#2f3c8f"},
+        {"label": "200\u2013300", "color": "#3b2275"},
+        {"label": "\u2265 300", "color": "#4d0b5c"}
+      ]
+    },
+    "bog_thaw_depth": {
+      "title": "Bog: Thaw Depth",
+      "unit": "cm",
+      "stops": [
+        {"label": "0", "color": "#fbf3e4"},
+        {"label": "20", "color": "#ecd09b"},
+        {"label": "40", "color": "#d39a52"},
+        {"label": "60", "color": "#a5612a"},
+        {"label": "\u2265 80", "color": "#5e3112"}
+      ]
+    },
+    "mean_frost_depth": {
+      "title": "Mean: Frost Depth",
+      "unit": "cm",
+      "stops": [
+        {"label": "0", "color": "#f2f0fa"},
+        {"label": "20", "color": "#cbc6ea"},
+        {"label": "40", "color": "#9a90d0"},
+        {"label": "60", "color": "#6a54b0"},
+        {"label": "\u2265 80", "color": "#3b1a7e"}
+      ]
+    },
+    "mean_lz_volume": {
+      "title": "Mean: LZ Soil Moisture",
+      "unit": "%",
+      "stops": [
+        {"label": "\u2264 40", "color": "#f6eedb"},
+        {"label": "55", "color": "#d9c792"},
+        {"label": "70", "color": "#93b862"},
+        {"label": "85", "color": "#3f9256"},
+        {"label": "100", "color": "#14583a"}
+      ]
+    },
+    "mean_runoff": {
+      "title": "Mean: Runoff",
+      "unit": "mm/day ",
+      "stops": [
+        {"label": "0.1\u20130.2", "color": "#c6dbef"},
+        {"label": "0.2\u20130.5", "color": "#9ecae1"},
+        {"label": "0.5\u20131", "color": "#6baed6"},
+        {"label": "1\u20132", "color": "#4292c6"},
+        {"label": "2\u20135", "color": "#2171b5"},
+        {"label": "5\u201310", "color": "#08519c"},
+        {"label": "10\u201320", "color": "#08306b"},
+        {"label": "\u2265 20", "color": "#3f007d"}
+      ]
+    },
+    "mean_snow_depth": {
+      "title": "Mean: Snow Depth",
+      "unit": "cm ",
+      "stops": [
+        {"label": "1\u20135", "color": "#d4eef8"},
+        {"label": "5\u201310", "color": "#a6daf0"},
+        {"label": "10\u201320", "color": "#73c0e6"},
+        {"label": "20\u201330", "color": "#4a9fd8"},
+        {"label": "30\u201340", "color": "#2f7cc7"},
+        {"label": "40\u201350", "color": "#2a5aad"},
+        {"label": "50\u201370", "color": "#2f3c8f"},
+        {"label": "70\u2013100", "color": "#3b2275"},
+        {"label": "\u2265 100", "color": "#4d0b5c"}
+      ]
+    },
+    "mean_swe": {
+      "title": "Mean: Snow Water Equivalent",
+      "unit": "mm ",
+      "stops": [
+        {"label": "1\u201310", "color": "#d4eef8"},
+        {"label": "10\u201325", "color": "#a6daf0"},
+        {"label": "25\u201350", "color": "#73c0e6"},
+        {"label": "50\u201375", "color": "#4a9fd8"},
+        {"label": "75\u2013100", "color": "#2f7cc7"},
+        {"label": "100\u2013150", "color": "#2a5aad"},
+        {"label": "150\u2013200", "color": "#2f3c8f"},
+        {"label": "200\u2013300", "color": "#3b2275"},
+        {"label": "\u2265 300", "color": "#4d0b5c"}
+      ]
+    },
+    "mean_thaw_depth": {
+      "title": "Mean: Thaw Depth",
+      "unit": "cm",
+      "stops": [
+        {"label": "0", "color": "#fbf3e4"},
+        {"label": "20", "color": "#ecd09b"},
+        {"label": "40", "color": "#d39a52"},
+        {"label": "60", "color": "#a5612a"},
+        {"label": "\u2265 80", "color": "#5e3112"}
+      ]
+    },
+    "mean_uz_volume": {
+      "title": "Mean: UZ Soil Moisture",
+      "unit": "%",
+      "stops": [
+        {"label": "0", "color": "#f6eedb"},
+        {"label": "12.5", "color": "#d9c792"},
+        {"label": "25", "color": "#93b862"},
+        {"label": "37.5", "color": "#3f9256"},
+        {"label": "\u2265 50", "color": "#14583a"}
+      ]
+    },
+    "soil_state": {
+      "title": "Soil Moisture Deficit",
+      "unit": "mm",
+      "stops": [
+        {"label": "0\u20132", "color": "#2166ac"},
+        {"label": "2\u20135", "color": "#4f9fd0"},
+        {"label": "5\u201310", "color": "#7fcdbb"},
+        {"label": "10\u201320", "color": "#ffd966"},
+        {"label": "20\u201330", "color": "#fdae61"},
+        {"label": "30\u201350", "color": "#f46d43"},
+        {"label": "50\u201375", "color": "#d73027"},
+        {"label": "75\u2013100", "color": "#a50026"},
+        {"label": "\u2265 100", "color": "#67001f"}
+      ]
+    },
+    "hres_24h_precip": {
+      "title": "Precipitation (24 h)",
+      "unit": "mm/day ",
+      "stops": [
+        {"label": "0.1\u20130.5", "color": "#c5e4f5"},
+        {"label": "0.5\u20131", "color": "#8cc5ec"},
+        {"label": "1\u20132", "color": "#4f9fdc"},
+        {"label": "2\u20135", "color": "#2c6fc0"},
+        {"label": "5\u201310", "color": "#4b3fae"},
+        {"label": "10\u201320", "color": "#7a1fa2"},
+        {"label": "\u2265 20", "color": "#b0177d"}
+      ]
+    },
+    "hres_2m_air_temp": {
+      "title": "Air Temp.(2 m)",
+      "unit": "\u00b0C",
+      "stops": [
+        {"label": "< \u221220", "color": "#08306b"},
+        {"label": "\u221220 \u2026 \u221215", "color": "#2166ac"},
+        {"label": "\u221215 \u2026 \u221210", "color": "#4393c3"},
+        {"label": "\u221210 \u2026 \u22125", "color": "#74add1"},
+        {"label": "\u22125 \u2026 \u22122", "color": "#abd9e9"},
+        {"label": "\u22122 \u2026 0", "color": "#e0f3f8"},
+        {"label": "0 \u2026 2", "color": "#ffffbf"},
+        {"label": "2 \u2026 5", "color": "#fee090"},
+        {"label": "5 \u2026 10", "color": "#fdae61"},
+        {"label": "10 \u2026 15", "color": "#f46d43"},
+        {"label": "15 \u2026 20", "color": "#d73027"},
+        {"label": "\u2265 20", "color": "#a50026"}
       ]
     }
   },
@@ -167,19 +528,13 @@
     "animationIntervalMs": 1700,
     "ranges": [30, 90, 180, 365]
   },
-  "plotScaling": {
-    "headroom": 0.1,
-    "temperatureHeadspace": 0.5,
-    "temperatureToespace": 1.0,
-    "temperatureVariables": ["hres_2m_air_temp"]
-  },
   "plotDefaults": {
     "topMode": "basin",
     "topVariableA": "hres_2m_air_temp",
     "topKindA": "line",
     "topVariableB": "hres_24h_precip",
     "topKindB": "bar",
-    "topModels": ["hops", "hops_xgb"],
+    "topModels": ["hops"],
     "topShowObservations": true,
     "topShowStats": true,
     "bottomMode": "streamflow",
@@ -187,7 +542,7 @@
     "bottomKindA": "line",
     "bottomVariableB": "mean_runoff",
     "bottomKindB": "line",
-    "bottomModels": ["hops", "hops_xgb"],
+    "bottomModels": ["hops"],
     "bottomShowObservations": true,
     "bottomShowStats": true,
     "days": 30,

@@ -68,8 +68,29 @@ def read_app_config():
                 if not isinstance(display_options[key], list):
                     raise ValueError(f"displayOptions.{key} must be a JSON array")
                 config[key] = display_options[key]
+        merge_variables(config, display_options)
         apply_enable_flags(config, display_options)
     return config
+
+
+def merge_variables(config, display_options):
+    """Add or override variable definitions from displayOptions.variables, matched by id."""
+    extra = display_options.get("variables")
+    if extra is None:
+        return
+    if not isinstance(extra, list):
+        raise ValueError("displayOptions.variables must be a JSON array")
+    variables = list(config.get("variables", []))
+    index = {v.get("id"): i for i, v in enumerate(variables)}
+    for item in extra:
+        if not isinstance(item, dict) or not item.get("id"):
+            raise ValueError("Each displayOptions.variables entry must be an object with an id")
+        if item["id"] in index:
+            variables[index[item["id"]]] = {**variables[index[item["id"]]], **item}
+        else:
+            index[item["id"]] = len(variables)
+            variables.append(item)
+    config["variables"] = variables
 
 
 def apply_enable_flags(config, display_options):

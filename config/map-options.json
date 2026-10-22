@@ -64,6 +64,10 @@
     "bog_runoff",
     "hres_24h_precip",
     "hres_2m_air_temp",
+    "hres_2m_air_temp_min",
+    "hres_2m_air_temp_max",
+    "hres_sunshine_sum",
+    "hres_shortwave_sum",
     "h13_swe",
     "h65_swe",
     "swe_5km"
